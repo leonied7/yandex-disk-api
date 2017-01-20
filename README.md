@@ -1,6 +1,12 @@
-# YandexDiskApi
-php WebDAV
-тест
-11111111111ыв
+# PHP библиотека к API Яндекс диска
 
-ввв
+## Использование
+
+```
+//Подключаем автозагрузчик классов
+require_once(__DIR__ . "/init.php");
+
+$disk = new \Yandex\Disk\YandexDisk(TOKEN);
+
+$dir = $disk->directoryContents('/backup/');
+```
