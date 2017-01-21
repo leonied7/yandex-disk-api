@@ -30,6 +30,8 @@ class CurlWrapper
      */
     private $get;
 
+    private $body;
+
     /**
      * результат curl
      * @var string
@@ -60,6 +62,9 @@ class CurlWrapper
                     break;
                 case 'query':
                     $this->get = http_build_query($option);
+                    break;
+                case 'body':
+                    $this->body = $option;
                     break;
                 default:
                     throw new \Exception("unknown option '{$optionName}'");
@@ -134,6 +139,9 @@ class CurlWrapper
 
         if($this->headers)
             curl_setopt($this->curl, CURLOPT_HTTPHEADER, $this->headers);
+
+        if($this->body)
+            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->body);
     }
 
     /**
