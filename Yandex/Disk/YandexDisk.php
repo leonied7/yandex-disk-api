@@ -23,11 +23,6 @@ class YandexDisk
      */
     protected $lastResponse;
 
-    public function getLastResponse()
-    {
-        return $this->lastResponse;
-    }
-
     function __construct($token)
     {
         if(!$token)
@@ -46,8 +41,6 @@ class YandexDisk
         if(!$url)
             throw new \Exception('url is required parameter');
 
-
-        
         $response = new CurlWrapper(
             'PROPFIND',
             $this->getPath($url),
@@ -83,6 +76,47 @@ class YandexDisk
         }
 
         return $contents;
+    }
+
+    public function spaceInfo($data = '')
+    {
+        switch ($data)
+        {
+            case 'available':
+                $info = '<D:quota-available-bytes/>';
+                break;
+            case 'used':
+                $info = '<D:quota-used-bytes/>';
+                break;
+            default:
+                $info = '<D:quota-available-bytes/><D:quota-used-bytes/>';
+                break;
+        }
+
+        $response = new CurlWrapper(
+            'PROPFIND',
+            $this->getPath('/'),
+            [
+                'headers' => [
+                    'Depth' => '0',
+                    'Authorization' => "OAuth {$this->token}"
+                ],
+                'body' => "<D:propfind xmlns:D=\"DAV:\">
+                              <D:prop>{$info}</D:prop>
+                           </D:propfind>"
+            ]
+        );
+
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        return (array)$decodedBody->children('DAV:')->response->propstat->prop;
+    }
+
+    public function getLastResponse()
+    {
+        return $this->lastResponse;
     }
 
     private function getDecode($body)
