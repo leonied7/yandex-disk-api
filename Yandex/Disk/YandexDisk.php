@@ -8,6 +8,7 @@
  */
 namespace Yandex\Disk;
 
+use Yandex\Common\CurlResponse;
 use Yandex\Common\CurlWrapper;
 
 class YandexDisk
@@ -15,6 +16,17 @@ class YandexDisk
     protected $token;
 
     protected $url = "https://webdav.yandex.ru";
+
+    /**
+     * последний ответ курла
+     * @var CurlResponse
+     */
+    protected $lastResponse;
+
+    public function getLastResponse()
+    {
+        return $this->lastResponse;
+    }
 
     function __construct($token)
     {
@@ -29,7 +41,7 @@ class YandexDisk
         return $this->url . $this->correctPath($path);
     }
 
-    public function directoryContents($url, $thisFolder = false)
+    public function directoryContents($url, $offset = 0, $amount = null, $thisFolder = false)
     {
         if(!$url)
             throw new \Exception('url is required parameter');
@@ -41,11 +53,17 @@ class YandexDisk
                 'headers' => [
                     'Depth' => '1',
                     'Authorization' => "OAuth {$this->token}"
+                ],
+                'query' => [
+                    'offset' => $offset,
+                    'amount' => $amount
                 ]
             ]
         );
 
-        $decodedBody = $this->getDecode($response->exec()->getBody());
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
 
         $contents = [];
 
@@ -71,14 +89,14 @@ class YandexDisk
     }
 
 
-    function recurseXML($xml, &$result)
+    private function recurseXML($xml, &$result)
     {
         $child_count = 0;
 
         foreach($xml as $key=>$value)
         {
             $child_count++;
-            if(!$this->recurseXML($value, $result))  // no childern, aka "leaf node"
+            if(!$this->recurseXML($value, $result))
             {
                 $result[(string)$key]  = (string)$value;
             }
@@ -94,6 +112,8 @@ class YandexDisk
      */
     private function correctPath($path)
     {
-        return DIRECTORY_SEPARATOR . trim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $path = trim($path, DIRECTORY_SEPARATOR);
+
+        return $path ? DIRECTORY_SEPARATOR . trim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR : DIRECTORY_SEPARATOR;
     }
 }
