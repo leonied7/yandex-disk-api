@@ -45,7 +45,6 @@ class YandexDisk
     {
         if(!$url)
             throw new \Exception('url is required parameter');
-
         
         $response = new CurlWrapper(
             'PROPFIND',
