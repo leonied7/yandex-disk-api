@@ -46,20 +46,16 @@ class YandexDisk
         if(!$url)
             throw new \Exception('url is required parameter');
 
-        $response = new CurlWrapper(
-            'PROPFIND',
-            $this->getPath($url),
-            [
+        $response = new CurlWrapper('PROPFIND', $this->getPath($url), [
                 'headers' => [
-                    'Depth' => '1',
+                    'Depth'         => '1',
                     'Authorization' => "OAuth {$this->token}"
                 ],
-                'query' => [
+                'query'   => [
                     'offset' => $offset,
                     'amount' => $amount
                 ]
-            ]
-        );
+            ]);
 
         $this->lastResponse = $response->exec();
 
@@ -83,9 +79,41 @@ class YandexDisk
         return $contents;
     }
 
+    public function spaceInfo($info = '')
+    {
+        switch($info)
+        {
+            case 'available':
+                $info = '<D:quota-available-bytes/>';
+                break;
+            case 'used':
+                $info = '<D:quota-used-bytes/>';
+                break;
+            default:
+                $info = '<D:quota-available-bytes/><D:quota-used-bytes/>';
+                break;
+        }
+
+        $response = new CurlWrapper('PROPFIND', $this->getPath('/'), [
+                'headers' => [
+                    'Depth'         => 0,
+                    'Authorization' => "OAuth {$this->token}"
+                ],
+                'body'    => "<D:propfind xmlns:D=\"DAV:\">
+                                   <D:prop>{$info}</D:prop>
+                              </D:propfind>"
+            ]);
+
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        return (array) $decodedBody->children('DAV:')->response->propstat->prop;
+    }
+
     private function getDecode($body)
     {
-        return simplexml_load_string((string) $body);
+        return simplexml_load_string((string)$body);
     }
 
 
@@ -93,19 +121,21 @@ class YandexDisk
     {
         $child_count = 0;
 
-        foreach($xml as $key=>$value)
+        foreach($xml as $key => $value)
         {
             $child_count++;
             if(!$this->recurseXML($value, $result))
             {
-                $result[(string)$key]  = (string)$value;
+                $result[(string)$key] = (string)$value;
             }
         }
+
         return $child_count;
     }
 
     /**
      * корректирует путь
+     *
      * @param $path
      *
      * @return string
