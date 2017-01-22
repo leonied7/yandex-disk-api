@@ -59,12 +59,14 @@ class CurlWrapper
                     {
                         $this->headers[] = "{$key}: {$value}";
                     }
+                    curl_setopt($this->curl, CURLOPT_HTTPHEADER, $this->headers);
                     break;
                 case 'query':
                     $this->get = http_build_query($option);
                     break;
                 case 'body':
                     $this->body = $option;
+                    curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->body);
                     break;
                 default:
                     throw new \Exception("unknown option '{$optionName}'");
@@ -75,11 +77,20 @@ class CurlWrapper
 
     function __construct($method, $uri, $options = [])
     {
-        $this->setCustomRequest($method);
         $this->uri = $uri;
-        $this->prepareOptions($options);
 
         $this->curlInit();
+
+        $this->setCustomRequest($method);
+
+        $this->prepareOptions($options);
+
+        $this->setUrl();
+    }
+
+    protected function setUrl()
+    {
+        curl_setopt($this->curl, CURLOPT_URL, $this->getUrl());
     }
 
     /**
@@ -111,7 +122,7 @@ class CurlWrapper
     public function setCustomRequest($customRequest)
     {
         $this->customRequest = $customRequest;
-        //curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, $this->customRequest);
+        curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, $this->customRequest);
     }
 
     /**
@@ -128,20 +139,11 @@ class CurlWrapper
      */
     protected function curlInit()
     {
-        $this->curl = curl_init($this->getUrl());
+        $this->curl = curl_init();
         curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($this->curl, CURLINFO_HEADER_OUT, true);
-
-        if($this->customRequest)
-            curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, $this->customRequest);
-
-        if($this->headers)
-            curl_setopt($this->curl, CURLOPT_HTTPHEADER, $this->headers);
-
-        if($this->body)
-            curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->body);
     }
 
     /**
