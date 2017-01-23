@@ -41,21 +41,33 @@ class YandexDisk
         return $this->url . $this->correctPath($path);
     }
 
-    public function directoryContents($url, $offset = 0, $amount = null, $thisFolder = false)
+    /**
+     * получение содержимого папки $path, так же по стандарту из результата удаляется текущая папка, если требуется оставить установить $thisFolder в true
+     * $offset и $amount указаны в документации
+     * https://tech.yandex.ru/disk/doc/dg/reference/propfind_contains-request-docpage/
+     * @param $path
+     * @param int $offset
+     * @param null $amount
+     * @param bool $thisFolder
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public function directoryContents($path, $offset = 0, $amount = null, $thisFolder = false)
     {
-        if(!$url)
-            throw new \Exception('url is required parameter');
+        if(!$path)
+            throw new \Exception('path is required parameter');
 
-        $response = new CurlWrapper('PROPFIND', $this->getPath($url), [
-                'headers' => [
-                    'Depth'         => '1',
-                    'Authorization' => "OAuth {$this->token}"
-                ],
-                'query'   => [
-                    'offset' => $offset,
-                    'amount' => $amount
-                ]
-            ]);
+        $response = new CurlWrapper('PROPFIND', $this->getPath($path), [
+            'headers' => [
+                'Depth'         => '1',
+                'Authorization' => "OAuth {$this->token}"
+            ],
+            'query'   => [
+                'offset' => $offset,
+                'amount' => $amount
+            ]
+        ]);
 
         $this->lastResponse = $response->exec();
 
@@ -65,7 +77,7 @@ class YandexDisk
 
         foreach($decodedBody->children('DAV:') as $element)
         {
-            if(!$thisFolder && ($element->href->__toString() === $url))
+            if(!$thisFolder && ($element->href->__toString() === $path))
                 continue;
 
             $result = [];
@@ -79,6 +91,14 @@ class YandexDisk
         return $contents;
     }
 
+    /**
+     * получение свободного/занятого места
+     * можно получить что-то одно, если указать available/used
+     * https://tech.yandex.ru/disk/doc/dg/reference/propfind_space-request-docpage/
+     * @param string $info
+     *
+     * @return array
+     */
     public function spaceInfo($info = '')
     {
         switch($info)
@@ -95,20 +115,92 @@ class YandexDisk
         }
 
         $response = new CurlWrapper('PROPFIND', $this->getPath('/'), [
-                'headers' => [
-                    'Depth'         => 0,
-                    'Authorization' => "OAuth {$this->token}"
-                ],
-                'body'    => "<D:propfind xmlns:D=\"DAV:\">
+            'headers' => [
+                'Depth'         => 0,
+                'Authorization' => "OAuth {$this->token}"
+            ],
+            'body'    => "<D:propfind xmlns:D=\"DAV:\">
                                    <D:prop>{$info}</D:prop>
                               </D:propfind>"
-            ]);
+        ]);
 
         $this->lastResponse = $response->exec();
 
         $decodedBody = $this->getDecode($this->lastResponse->getBody());
 
-        return (array) $decodedBody->children('DAV:')->response->propstat->prop;
+        return (array)$decodedBody->children('DAV:')->response->propstat->prop;
+    }
+
+    /**
+     * получение свойств файла/каталога, вторым параметром передаётся массив свойств которые нужно вернуть
+     * если свойство не найдено, оно не будет добавлено в результирующий массив
+     * если оставить свойства пустыми то вернет стандартные свойства элемента как и при запросе содержимого
+     *
+     * https://tech.yandex.ru/disk/doc/dg/reference/propfind_property-request-docpage/
+     *
+     * @param $path
+     * @param array $props
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public function getProperties($path, $props = [])
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(!is_array($props))
+            throw new \Exception('props must be array');
+
+        $props = is_array($props) ? $props : array($props);
+
+        $body = '';
+
+        foreach($props as $prop)
+        {
+            $body .= "<{$prop} />";
+        }
+
+        unset($prop);
+
+        $body = $body ? "<prop>{$body}</prop>" : "<allprop/>";
+
+        $body = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><propfind xmlns=\"DAV:\">{$body}</propfind>";
+
+        $response = new CurlWrapper('PROPFIND', $this->getPath($path), [
+            'headers' => [
+                'Depth'          => 0,
+                'Authorization'  => "OAuth {$this->token}",
+                'Content-Length' => strlen($body),
+                'Content-Type'   => 'application/x-www-form-urlencoded'
+            ],
+            'body'    => $body
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        $answer = (array)$decodedBody->children('DAV:')->response;
+
+        $arProps = $answer['propstat'];
+
+        $arProps = is_array($arProps) ? $arProps : array($arProps);
+
+        $result = [];
+
+        foreach($arProps as $arProp)
+        {
+            if(strpos($arProp->status, '200 OK') === false)
+                continue;
+
+            foreach((array)$arProp->prop as $key => $prop)
+            {
+                $result[(string)$key] = (string)$prop;
+            }
+        }
+
+        return $result;
     }
 
     private function getDecode($body)
