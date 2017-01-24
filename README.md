@@ -11,7 +11,10 @@ $disk = new \Yandex\Disk\YandexDisk(TOKEN);
 ```
 
 ### Запрос содержимого каталога
-
+```php
+array \Yandex\Disk\YandexDisk::directoryContents(string $path [, int $offset = 0, int $amount = null [, bool $thisFolder = false]]);
+`$path` - путь на яндекс диске
+```
 ```php
 // Можно передать отступ и количество возвращаемых элементов при передаче 2,3 параметров
 // по стандарту текущая папка удаляется из результата, 

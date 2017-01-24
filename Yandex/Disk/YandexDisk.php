@@ -97,17 +97,21 @@ class YandexDisk
      * https://tech.yandex.ru/disk/doc/dg/reference/propfind_space-request-docpage/
      * @param string $info
      *
-     * @return array
+     * @return array|string
      */
     public function spaceInfo($info = '')
     {
+        $prop = false;
+
         switch($info)
         {
             case 'available':
-                $info = '<D:quota-available-bytes/>';
+                $prop = 'quota-available-bytes';
+                $info = "<D:{$prop}/>";
                 break;
             case 'used':
-                $info = '<D:quota-used-bytes/>';
+                $prop = 'quota-used-bytes';
+                $info = "<D:{$prop}/>";
                 break;
             default:
                 $info = '<D:quota-available-bytes/><D:quota-used-bytes/>';
@@ -127,6 +131,9 @@ class YandexDisk
         $this->lastResponse = $response->exec();
 
         $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        if($prop)
+            return (string)$decodedBody->children('DAV:')->response->propstat->prop->$prop;
 
         return (array)$decodedBody->children('DAV:')->response->propstat->prop;
     }
