@@ -63,22 +63,23 @@ $info = $disk->spaceInfo('used');
 
 ### Получение свойств файла/папки
 ```php
-array \Yandex\Disk\YandexDisk::getProperties(string $path [, array $props = array()]);
+array \Yandex\Disk\YandexDisk::getProperties(string $path [, array $props = array() [, string $namespace = 'default']);
 ```
 
 `$path` - путь на яндекс диске
 
 `$props` - массив запрашиваемых свойств, если массив пустой то вернёт стандартные свойства как при запросе содержимого
 
+`$namespace` - наймспэйс для сохранения свойств, не может быть пустым
+
 **Примеры**
 
 ```php
 //запросим свойства 'test' и 'getlastmodified' файла 'crontab'
-$arProperties = $disk->getProperties('/crontab', ['test', 'getlastmodified']);
+$arProperties = $disk->getProperties('/crontab', ['test']);
 //вернёт примерно следующий результат
 Array
 (
-    [getlastmodified] => Wed, 09 Sep 2015 10:15:59 GMT
 )
 //свойство 'test' не найдено у файла, поэтому исключено из результата
 ```
