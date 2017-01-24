@@ -306,6 +306,37 @@ class YandexDisk
         return $this->setProperties($path, $arProps, $namespace);
     }
 
+    public function startPublish($path)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $body = "<propertyupdate xmlns=\"DAV:\">
+                    <set>
+                        <prop>
+                            <public_url xmlns=\"urn:yandex:disk:meta\">true</public_url>
+                        </prop>
+                    </set>
+                </propertyupdate>";
+
+        $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Content-Length' => strlen($body)
+            ],
+            'body' => $body
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        if(!$decodedBody instanceof \SimpleXMLElement)
+            throw new \Exception($this->lastResponse->getBody(), $this->lastResponse->getCode());
+
+        print_r($this->lastResponse->getBody());
+    }
+
     private function getDecode($body)
     {
         return simplexml_load_string((string)$body);
