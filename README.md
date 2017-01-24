@@ -23,10 +23,15 @@ array \Yandex\Disk\YandexDisk::directoryContents(string $path [, int $offset = 0
 
 `$thisFolder` - оставлять запрашиваемую папку в ответе
 
-**Пример**
+**Примеры**
 
 ```php
-// получим из содержимого папки backup первые 5 элементов  
+//получить содержимое папки 'Музыка'
+$dir = $disk->directoryContents('/Музыка');
+```
+
+```php
+// получим из содержимого папки 'backup' первые 5 элементов  
 $dir = $disk->directoryContents('/backup', 0, 5);
 ```
 
