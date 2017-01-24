@@ -273,6 +273,32 @@ class YandexDisk
         return true;
     }
 
+    /**
+     * Удаление свойств у файла/папки
+     * @param string $path
+     * @param string|array $props
+     * @param string $namespace
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function removeProperties($path, $props, $namespace = 'default')
+    {
+        if(!$props)
+            throw new \Exception('props is required parameter');
+
+        $props = is_array($props) ? $props : array($props);
+
+        $arProps = [];
+
+        foreach($props as $prop)
+        {
+            $arProps[$prop] = false;
+        }
+
+        return $this->setProperties($path, $arProps, $namespace);
+    }
+
     private function getDecode($body)
     {
         return simplexml_load_string((string)$body);
