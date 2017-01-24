@@ -148,10 +148,12 @@ class YandexDisk
      * @param $path
      * @param array $props
      *
+     * @param string $namespace
+     *
      * @return array
      * @throws \Exception
      */
-    public function getProperties($path, $props = [])
+    public function getProperties($path, $props = [], $namespace = 'default')
     {
         if(!$path)
             throw new \Exception('path is required parameter');
@@ -159,13 +161,11 @@ class YandexDisk
         if(!is_array($props))
             throw new \Exception('props must be array');
 
-        $props = is_array($props) ? $props : array($props);
-
         $body = '';
 
         foreach($props as $prop)
         {
-            $body .= "<{$prop} />";
+            $body .= "<{$prop} xmlns=\"{$namespace}\"/>";
         }
 
         unset($prop);
@@ -201,13 +201,102 @@ class YandexDisk
             if(strpos($arProp->status, '200 OK') === false)
                 continue;
 
-            foreach((array)$arProp->prop as $key => $prop)
+            $arPropsResult = empty((array)$arProp->prop) ? (array)$arProp->prop->children($namespace) : (array)$arProp->prop;
+
+            foreach($arPropsResult as $key => $prop)
             {
                 $result[(string)$key] = (string)$prop;
             }
+
         }
 
         return $result;
+    }
+
+    /**
+     * установка/удаление свойств для файла/папки
+     * @param $path
+     * @param array $props
+     * @param string $namespace
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function setProperties($path, $props = [], $namespace = 'default')
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(!is_array($props))
+            throw new \Exception('props must be only array');
+
+        $body = '';
+        $set = '';
+        $remove = '';
+
+        foreach($props as $key => $value)
+        {
+            if($value)
+                $set .= "<u:{$key}>{$value}</u:{$key}>";
+            else
+                $remove .= "<u:{$key}/>";
+        }
+
+        if($set)
+            $body .= "<set><prop>{$set}</prop></set>";
+
+        if($remove)
+            $body .= "<remove><prop>{$remove}</prop></remove>";
+
+        if(!$body)
+            return false;
+
+
+        $body = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><propertyupdate xmlns=\"DAV:\" xmlns:u=\"{$namespace}\">{$body}</propertyupdate>";
+
+        $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
+            'headers' => [
+                'Authorization'  => "OAuth {$this->token}",
+                'Content-Length' => strlen($body),
+                'Content-Type'   => 'application/x-www-form-urlencoded'
+            ],
+            'body'    => $body
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        if(strpos($decodedBody->children('DAV:')->response->propstat->status, '200 OK') === false)
+            return false;
+
+        return true;
+    }
+
+    /**
+     * Удаление свойств у файла/папки
+     * @param string $path
+     * @param string|array $props
+     * @param string $namespace
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function removeProperties($path, $props, $namespace = 'default')
+    {
+        if(!$props)
+            throw new \Exception('props is required parameter');
+
+        $props = is_array($props) ? $props : array($props);
+
+        $arProps = [];
+
+        foreach($props as $prop)
+        {
+            $arProps[$prop] = false;
+        }
+
+        return $this->setProperties($path, $arProps, $namespace);
     }
 
     private function getDecode($body)

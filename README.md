@@ -23,10 +23,15 @@ array \Yandex\Disk\YandexDisk::directoryContents(string $path [, int $offset = 0
 
 `$thisFolder` - оставлять запрашиваемую папку в ответе
 
-**Пример**
+**Примеры**
 
 ```php
-// получим из содержимого папки backup первые 5 элементов  
+//получить содержимое папки 'Музыка'
+$dir = $disk->directoryContents('/Музыка');
+```
+
+```php
+// получим из содержимого папки 'backup' первые 5 элементов  
 $dir = $disk->directoryContents('/backup', 0, 5);
 ```
 
@@ -58,22 +63,23 @@ $info = $disk->spaceInfo('used');
 
 ### Получение свойств файла/папки
 ```php
-array \Yandex\Disk\YandexDisk::getProperties(string $path [, array $props = array()]);
+array \Yandex\Disk\YandexDisk::getProperties(string $path [, array $props = array() [, string $namespace = 'default']);
 ```
 
 `$path` - путь на яндекс диске
 
 `$props` - массив запрашиваемых свойств, если массив пустой то вернёт стандартные свойства как при запросе содержимого
 
+`$namespace` - наймспэйс для сохранения свойств, не может быть пустым
+
 **Примеры**
 
 ```php
 //запросим свойства 'test' и 'getlastmodified' файла 'crontab'
-$arProperties = $disk->getProperties('/crontab', ['test', 'getlastmodified']);
+$arProperties = $disk->getProperties('/crontab', ['test']);
 //вернёт примерно следующий результат
 Array
 (
-    [getlastmodified] => Wed, 09 Sep 2015 10:15:59 GMT
 )
 //свойство 'test' не найдено у файла, поэтому исключено из результата
 ```
@@ -89,4 +95,40 @@ Array
     [displayname] => backup
     [creationdate] => 2015-09-09T10:09:45Z
 )
+```
+
+### Установка/удаление свойств файла/папки
+```php
+bool \Yandex\Disk\YandexDisk::setProperties(string $path, array $props = array() [, string $namespace = 'default']);
+```
+
+`$path` - путь на яндекс диске
+
+`$props` - массив устанавливаемых свойств
+
+`$namespace` - наймспэйс для установки свойств, не может быть пустым
+
+**Примеры**
+
+```php
+//Установим для папки 'Музыка' свойство 'myprop1' и удалим свойство 'myprop2'
+$disk->setProperties('/Музыка', ['myprop1' => 'myvalue1', 'myprop2' => false]);
+```
+
+### Удаление свойств файла/папки
+```php
+//Обёртка метода setProperties()
+bool \Yandex\Disk\YandexDisk::removeProperties(string $path, string|array $props [, $namespace = 'default'])
+```
+
+**Примеры**
+
+```php
+//Удалим свойства 'myprop2' и 'myprop' у папки 'Музыка'
+$disk->removeProperties('/Музыка', ['myprop2', 'myprop']);
+```
+
+```php
+//Удалим свойство 'myprop1' у файла 'tetx.txt'
+$disk->removeProperties('/tetx.txt', 'myprop1');
 ```
