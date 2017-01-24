@@ -44,7 +44,9 @@ class YandexDisk
     /**
      * получение содержимого папки $path, так же по стандарту из результата удаляется текущая папка, если требуется оставить установить $thisFolder в true
      * $offset и $amount указаны в документации
-     * https://tech.yandex.ru/disk/doc/dg/reference/propfind_contains-request-docpage/
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/propfind_contains-request-docpage/
+     *
      * @param $path
      * @param int $offset
      * @param null $amount
@@ -94,7 +96,9 @@ class YandexDisk
     /**
      * получение свободного/занятого места
      * можно получить что-то одно, если указать available/used
-     * https://tech.yandex.ru/disk/doc/dg/reference/propfind_space-request-docpage/
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/propfind_space-request-docpage/
+     *
      * @param string $info
      *
      * @return array|string
@@ -143,7 +147,7 @@ class YandexDisk
      * если свойство не найдено, оно не будет добавлено в результирующий массив
      * если оставить свойства пустыми то вернет стандартные свойства элемента как и при запросе содержимого
      *
-     * https://tech.yandex.ru/disk/doc/dg/reference/propfind_property-request-docpage/
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/propfind_property-request-docpage/
      *
      * @param $path
      * @param array $props
@@ -215,6 +219,9 @@ class YandexDisk
 
     /**
      * установка/удаление свойств для файла/папки
+     *
+     * https://tech.yandex.ru/disk/doc/dg/reference/proppatch-docpage/
+     *
      * @param $path
      * @param array $props
      * @param string $namespace
@@ -299,11 +306,41 @@ class YandexDisk
         return $this->setProperties($path, $arProps, $namespace);
     }
 
+    public function startPublish($path)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $body = "<propertyupdate xmlns=\"DAV:\">
+                    <set>
+                        <prop>
+                            <public_url xmlns=\"urn:yandex:disk:meta\">true</public_url>
+                        </prop>
+                    </set>
+                </propertyupdate>";
+
+        $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Content-Length' => strlen($body)
+            ],
+            'body' => $body
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+
+        if(!$decodedBody instanceof \SimpleXMLElement)
+            throw new \Exception($this->lastResponse->getBody(), $this->lastResponse->getCode());
+
+        print_r($this->lastResponse->getBody());
+    }
+
     private function getDecode($body)
     {
         return simplexml_load_string((string)$body);
     }
-
 
     private function recurseXML($xml, &$result)
     {
