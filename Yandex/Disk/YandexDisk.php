@@ -213,13 +213,22 @@ class YandexDisk
         return $result;
     }
 
+    /**
+     * установка/удаление свойств для файла/папки
+     * @param $path
+     * @param array $props
+     * @param string $namespace
+     *
+     * @return bool
+     * @throws \Exception
+     */
     public function setProperties($path, $props = [], $namespace = 'default')
     {
         if(!$path)
             throw new \Exception('path is required parameter');
 
         if(!is_array($props))
-            throw new \Exception('props must be array');
+            throw new \Exception('props must be only array');
 
         $body = '';
         $set = '';

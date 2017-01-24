@@ -96,3 +96,21 @@ Array
     [creationdate] => 2015-09-09T10:09:45Z
 )
 ```
+
+### Установка/удаление свойств файла/папки
+```php
+bool \Yandex\Disk\YandexDisk::setProperties(string $path, array $props = array() [, string $namespace = 'default']);
+```
+
+`$path` - путь на яндекс диске
+
+`$props` - массив устанавливаемых свойств
+
+`$namespace` - наймспэйс для установки свойств, не может быть пустым
+
+**Примеры**
+
+```php
+//Установим для папки 'Музыка' свойство 'myprop1' и удалим свойство 'myprop2'
+$disk->setProperties('/Музыка', ['myprop1' => 'myvalue1', 'myprop2' => false]);
+```
