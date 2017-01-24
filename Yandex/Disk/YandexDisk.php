@@ -77,7 +77,7 @@ class YandexDisk
 
         foreach($decodedBody->children('DAV:') as $element)
         {
-            if(!$thisFolder && ($element->href->__toString() === $path))
+            if(!$thisFolder && ($element->href->__toString() === $this->correctPath($path)))
                 continue;
 
             $result = [];
