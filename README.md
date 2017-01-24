@@ -114,3 +114,21 @@ bool \Yandex\Disk\YandexDisk::setProperties(string $path, array $props = array()
 //Установим для папки 'Музыка' свойство 'myprop1' и удалим свойство 'myprop2'
 $disk->setProperties('/Музыка', ['myprop1' => 'myvalue1', 'myprop2' => false]);
 ```
+
+### Удаление свойств файла/папки
+```php
+//Обёртка метода setProperties()
+bool \Yandex\Disk\YandexDisk::removeProperties(string $path, string|array $props [, $namespace = 'default'])
+```
+
+**Примеры**
+
+```php
+//Удалим свойства 'myprop2' и 'myprop' у папки 'Музыка'
+$disk->removeProperties('/Музыка', ['myprop2', 'myprop']);
+```
+
+```php
+//Удалим свойство 'myprop1' у файла 'tetx.txt'
+$disk->removeProperties('/tetx.txt', 'myprop1');
+```
