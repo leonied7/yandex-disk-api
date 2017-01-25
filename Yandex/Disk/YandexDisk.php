@@ -77,15 +77,14 @@ class YandexDisk
 
         $contents = [];
 
-        foreach($decodedBody->children('DAV:') as $element)
+        foreach($decodedBody as $element)
         {
-            if(!$thisFolder && ($element->href->__toString() === $this->correctPath($path)))
+            if(!$thisFolder && ($element['href'] === $this->correctPath($path)))
                 continue;
 
-            $result = [];
-            $this->recurseXML($element, $result);
+            $result = $element['propstat']['prop'];
 
-            $result['collection'] = isset($result['collection']) ? 'dir' : 'file';
+            $result['collection'] = isset($result['resourcetype']['collection']) ? 'dir' : 'file';
 
             $contents[] = $result;
         }
@@ -105,17 +104,13 @@ class YandexDisk
      */
     public function spaceInfo($info = '')
     {
-        $prop = false;
-
         switch($info)
         {
             case 'available':
-                $prop = 'quota-available-bytes';
-                $info = "<D:{$prop}/>";
+                $info = "<D:quota-available-bytes/>";
                 break;
             case 'used':
-                $prop = 'quota-used-bytes';
-                $info = "<D:{$prop}/>";
+                $info = "<D:quota-used-bytes/>";
                 break;
             default:
                 $info = '<D:quota-available-bytes/><D:quota-used-bytes/>';
@@ -134,12 +129,9 @@ class YandexDisk
 
         $this->lastResponse = $response->exec();
 
-        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+        $decodedBody = $this->getDecode($this->lastResponse->getBody())[0];
 
-        if($prop)
-            return (string)$decodedBody->children('DAV:')->response->propstat->prop->$prop;
-
-        return (array)$decodedBody->children('DAV:')->response->propstat->prop;
+        return $decodedBody['propstat']['prop'];
     }
 
     /**
@@ -190,28 +182,23 @@ class YandexDisk
 
         $this->lastResponse = $response->exec();
 
-        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+        $decodedBody = $this->getDecode($this->lastResponse->getBody())[0];
 
-        $answer = (array)$decodedBody->children('DAV:')->response;
+        $arProps = $decodedBody['propstat'];
 
-        $arProps = $answer['propstat'];
-
-        $arProps = is_array($arProps) ? $arProps : array($arProps);
+        $arProps = isset($arProps['status']) ? array($arProps) : $arProps;
 
         $result = [];
 
         foreach($arProps as $arProp)
         {
-            if(strpos($arProp->status, '200 OK') === false)
+            if(strpos($arProp['status'], '200 OK') === false)
                 continue;
 
-            $arPropsResult = empty((array)$arProp->prop) ? (array)$arProp->prop->children($namespace) : (array)$arProp->prop;
-
-            foreach($arPropsResult as $key => $prop)
+            foreach($arProp['prop'] as $key => $prop)
             {
-                $result[(string)$key] = (string)$prop;
+                $result[$key] = $prop;
             }
-
         }
 
         return $result;
@@ -272,12 +259,9 @@ class YandexDisk
 
         $this->lastResponse = $response->exec();
 
-        $decodedBody = $this->getDecode($this->lastResponse->getBody());
+        $decodedBody = $this->getDecode($this->lastResponse->getBody())[0];
 
-        if(strpos($decodedBody->children('DAV:')->response->propstat->status, '200 OK') === false)
-            return false;
-
-        return true;
+        return strpos($decodedBody['propstat']['status'], '200 OK') === false ? false : true;
     }
 
     /**
@@ -339,7 +323,18 @@ class YandexDisk
 
     private function getDecode($body)
     {
-        return simplexml_load_string((string)$body);
+        $dom = new \DOMDocument();
+
+        $dom->loadXML($body);
+
+        $result = [];
+
+        foreach($dom->getElementsByTagName('response') as $element)
+        {
+            $result[] = $this->getArray($element);
+        }
+
+        return $result;
     }
 
     private function recurseXML($xml, &$result)
@@ -356,6 +351,40 @@ class YandexDisk
         }
 
         return $child_count;
+    }
+
+    /**
+     * @param \DOMNode $node
+     *
+     * @return bool
+     */
+    private function getArray($node)
+    {
+        $array = false;
+
+        if ($node->hasChildNodes())
+        {
+            if ($node->childNodes->length == 1)
+            {
+                if($node->firstChild->nodeType === XML_TEXT_NODE)
+                    $array = $node->firstChild->nodeValue;
+                else
+                    $array[$node->firstChild->localName] = $node->firstChild->nodeValue;
+
+            }
+            else
+            {
+                foreach ($node->childNodes as $childNode)
+                {
+                    if ($childNode->nodeType != XML_TEXT_NODE)
+                    {
+                        $array[$childNode->localName] = $this->getArray($childNode);
+                    }
+                }
+            }
+        }
+
+        return $array;
     }
 
     /**
