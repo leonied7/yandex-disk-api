@@ -338,6 +338,29 @@ class YandexDisk
         return $this->getProperties($path, ['public_url'], 'urn:yandex:disk:meta')['public_url'];
     }
 
+    public function getPreviewImage($path, $size = 'XXXS')
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $response = new CurlWrapper('GET', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ],
+            'query'   => [
+                'preview' => '',
+                'size' => $size
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if($this->lastResponse->getCode() != 200)
+            return false;
+
+        return $this->lastResponse->getBody();
+    }
+
     private function getDecode($body)
     {
         $dom = new \DOMDocument();
