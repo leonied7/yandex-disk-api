@@ -213,7 +213,7 @@ class YandexDisk
      * @param array $props
      * @param string $namespace
      *
-     * @return bool
+     * @return bool|array
      * @throws \Exception
      */
     public function setProperties($path, $props = [], $namespace = 'default')
@@ -261,7 +261,20 @@ class YandexDisk
 
         $decodedBody = $this->getDecode($this->lastResponse->getBody())[0];
 
-        return strpos($decodedBody['propstat']['status'], '200 OK') === false ? false : true;
+        $result = [];
+
+        foreach($decodedBody['propstat']['prop'] as $keyProp => $valueProp)
+        {
+            if(!$valueProp)
+                continue;
+
+            $result[$keyProp] = $valueProp;
+        }
+
+        if(strpos($decodedBody['propstat']['status'], '200 OK') === false)
+            return false;
+
+        return empty($result) ? true : $result;
     }
 
     /**
@@ -290,35 +303,39 @@ class YandexDisk
         return $this->setProperties($path, $arProps, $namespace);
     }
 
+    /**
+     * Публикация файла/папки
+     * если папка/файл найдена то возвращает ссылку, иначе false
+     * @param $path
+     *
+     * @return bool|string
+     */
     public function startPublish($path)
     {
-        if(!$path)
-            throw new \Exception('path is required parameter');
+        return $this->setProperties($path, ['public_url' => true], 'urn:yandex:disk:meta')['public_url'];
+    }
 
-        $body = "<propertyupdate xmlns=\"DAV:\">
-                    <set>
-                        <prop>
-                            <public_url xmlns=\"urn:yandex:disk:meta\">true</public_url>
-                        </prop>
-                    </set>
-                </propertyupdate>";
+    /**
+     * Снятие публикации файла/папки возвращает true/false
+     * @param $path
+     *
+     * @return bool
+     */
+    public function stopPublish($path)
+    {
+        return $this->removeProperties($path, 'public_url', 'urn:yandex:disk:meta');
+    }
 
-        $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}",
-                'Content-Length' => strlen($body)
-            ],
-            'body' => $body
-        ]);
-
-        $this->lastResponse = $response->exec();
-
-        $decodedBody = $this->getDecode($this->lastResponse->getBody());
-
-        if(!$decodedBody instanceof \SimpleXMLElement)
-            throw new \Exception($this->lastResponse->getBody(), $this->lastResponse->getCode());
-
-        print_r($this->lastResponse->getBody());
+    /**
+     * Проверка публикации файла/папки
+     * если папка/файл опубликован то вернет ссылка, иначе false
+     * @param $path
+     *
+     * @return mixed
+     */
+    public function checkPublish($path)
+    {
+        return $this->getProperties($path, ['public_url'], 'urn:yandex:disk:meta')['public_url'];
     }
 
     private function getDecode($body)
