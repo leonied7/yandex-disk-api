@@ -77,15 +77,14 @@ class YandexDisk
 
         $contents = [];
 
-        foreach($decodedBody->children('DAV:') as $element)
+        foreach($decodedBody as $element)
         {
-            if(!$thisFolder && ($element->href->__toString() === $this->correctPath($path)))
+            if(!$thisFolder && ($element['href'] === $this->correctPath($path)))
                 continue;
 
-            $result = [];
-            $this->recurseXML($element, $result);
+            $result = $element['propstat']['prop'];
 
-            $result['collection'] = isset($result['collection']) ? 'dir' : 'file';
+            $result['collection'] = $result['resourcetype'] == 'collection' ? 'dir' : 'file';
 
             $contents[] = $result;
         }
@@ -339,7 +338,18 @@ class YandexDisk
 
     private function getDecode($body)
     {
-        return simplexml_load_string((string)$body);
+        $dom = new \DOMDocument();
+
+        $dom->loadXML($body);
+
+        $result = [];
+
+        foreach($dom->getElementsByTagName('response') as $element)
+        {
+            $result[] = $this->getArray($element);
+        }
+
+        return $result;
     }
 
     private function recurseXML($xml, &$result)
@@ -356,6 +366,36 @@ class YandexDisk
         }
 
         return $child_count;
+    }
+
+    /**
+     * @param \DOMNode $node
+     *
+     * @return bool
+     */
+    private function getArray($node)
+    {
+        $array = false;
+
+        if ($node->hasChildNodes())
+        {
+            if ($node->childNodes->length == 1)
+            {
+                $array = $node->firstChild->nodeValue ? $node->firstChild->nodeValue : $node->firstChild->localName;
+            }
+            else
+            {
+                foreach ($node->childNodes as $childNode)
+                {
+                    if ($childNode->nodeType != XML_TEXT_NODE)
+                    {
+                        $array[$childNode->localName] = $this->getArray($childNode);
+                    }
+                }
+            }
+        }
+
+        return $array;
     }
 
     /**
