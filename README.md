@@ -99,7 +99,7 @@ Array
 
 ### Установка/удаление свойств файла/папки
 ```php
-bool \Yandex\Disk\YandexDisk::setProperties(string $path, array $props = array() [, string $namespace = 'default']);
+bool|array \Yandex\Disk\YandexDisk::setProperties(string $path, array $props = array() [, string $namespace = 'default']);
 ```
 
 `$path` - путь на яндекс диске
@@ -121,6 +121,12 @@ $disk->setProperties('/Музыка', ['myprop1' => 'myvalue1', 'myprop2' => fal
 bool \Yandex\Disk\YandexDisk::removeProperties(string $path, string|array $props [, $namespace = 'default'])
 ```
 
+`$path` - путь на яндекс диске
+
+`$props` - массив удаляемых свойств или имя свойства для удаления
+
+`$namespace` - наймспэйс для установки свойств, не может быть пустым
+
 **Примеры**
 
 ```php
@@ -131,4 +137,51 @@ $disk->removeProperties('/Музыка', ['myprop2', 'myprop']);
 ```php
 //Удалим свойство 'myprop1' у файла 'tetx.txt'
 $disk->removeProperties('/tetx.txt', 'myprop1');
+```
+
+### Публикация файла/папки
+```php
+//Обёртка метода setProperties()
+bool|string \Yandex\Disk\YandexDisk::startPublish(string $path);
+```
+
+`$path` - путь на яндекс диске
+
+**Примеры**
+
+```php
+//если папка/файл найден, вернёт ссылку, иначе false
+if($url = $disk->startPublish('/Музыка'))
+    print_r($url);
+```
+
+### Снятие публикации файла/папки
+```php
+//Обёртка метода removeProperties()
+bool \Yandex\Disk\YandexDisk::stopPublish(string $path);
+```
+
+`$path` - путь на яндекс диске
+
+**Примеры**
+
+````php
+//при удачном снятии публикации вернёт true, иначе false
+$disk->stopPublish('/Музыка');
+````
+
+### Проверка публикации файла/папки
+```php
+//Обёртка метода getProperties()
+bool|string \Yandex\Disk\YandexDisk::checkPublish(string $path);
+```
+
+`$path` - путь на яндекс диске
+
+**Примеры**
+
+```php
+//если файл/папка опубликован вернёт ссылку, иначе false
+if($url = $disk->checkPublish('/Музыка'))
+    print_r($url);
 ```
