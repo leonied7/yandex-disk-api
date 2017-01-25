@@ -135,10 +135,7 @@ class YandexDisk
 
         $decodedBody = $this->getDecode($this->lastResponse->getBody());
 
-        if($prop)
-            return (string)$decodedBody->children('DAV:')->response->propstat->prop->$prop;
-
-        return (array)$decodedBody->children('DAV:')->response->propstat->prop;
+        return $decodedBody[0]['propstat']['prop'];
     }
 
     /**
