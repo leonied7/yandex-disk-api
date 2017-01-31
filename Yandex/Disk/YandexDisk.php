@@ -245,7 +245,6 @@ class YandexDisk
         if(!$body)
             return false;
 
-
         $body = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><propertyupdate xmlns=\"DAV:\" xmlns:u=\"{$namespace}\">{$body}</propertyupdate>";
 
         $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
@@ -279,6 +278,7 @@ class YandexDisk
 
     /**
      * Удаление свойств у файла/папки
+     *
      * @param string $path
      * @param string|array $props
      * @param string $namespace
@@ -306,6 +306,7 @@ class YandexDisk
     /**
      * Публикация файла/папки
      * если папка/файл найдена то возвращает ссылку, иначе false
+     *
      * @param $path
      *
      * @return bool|string
@@ -317,6 +318,7 @@ class YandexDisk
 
     /**
      * Снятие публикации файла/папки возвращает true/false
+     *
      * @param $path
      *
      * @return bool
@@ -329,6 +331,7 @@ class YandexDisk
     /**
      * Проверка публикации файла/папки
      * если папка/файл опубликован то вернет ссылка, иначе false
+     *
      * @param $path
      *
      * @return mixed
@@ -336,6 +339,71 @@ class YandexDisk
     public function checkPublish($path)
     {
         return $this->getProperties($path, ['public_url'], 'urn:yandex:disk:meta')['public_url'];
+    }
+
+    /**
+     * Получение превью картинки
+     * @param $path
+     * @param string $size
+     * @param bool|resource $stream ресурс файла, в который писать ответ
+     *
+     * @return bool|string
+     * @throws \Exception
+     */
+    public function getPreviewImage($path, $size = 'XXXS', $stream = false)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $options = [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ],
+            'query'   => [
+                'preview' => '',
+                'size'    => $size
+            ]
+        ];
+
+        if($stream)
+            $options['infile'] = $stream;
+
+        $response = new CurlWrapper('GET', $this->getPath($path), $options);
+
+        $this->lastResponse = $response->exec();
+
+        if($this->lastResponse->getCode() != 200)
+            return false;
+
+        if($stream)
+            return true;
+
+        return $this->lastResponse->getBody();
+    }
+
+    private function createStream($options)
+    {
+        $arParams = [];
+
+        foreach($options as $key => $value)
+        {
+            switch($key)
+            {
+                case 'path':
+                case 'host':
+                case 'login':
+                case 'password':
+                    $arParams[$key] = $value;
+                    break;
+//                case 'connect':
+//                    if(gettype($value) != "resource")
+//                        throw new \InvalidArgumentException("{$key} can be only resource");
+//
+//                    $arParams[$key] = $value;
+//                    break;
+            }
+        }
+
     }
 
     private function getDecode($body)
@@ -379,21 +447,20 @@ class YandexDisk
     {
         $array = false;
 
-        if ($node->hasChildNodes())
+        if($node->hasChildNodes())
         {
-            if ($node->childNodes->length == 1)
+            if($node->childNodes->length == 1)
             {
                 if($node->firstChild->nodeType === XML_TEXT_NODE)
                     $array = $node->firstChild->nodeValue;
                 else
                     $array[$node->firstChild->localName] = $node->firstChild->nodeValue;
-
             }
             else
             {
-                foreach ($node->childNodes as $childNode)
+                foreach($node->childNodes as $childNode)
                 {
-                    if ($childNode->nodeType != XML_TEXT_NODE)
+                    if($childNode->nodeType != XML_TEXT_NODE)
                     {
                         $array[$childNode->localName] = $this->getArray($childNode);
                     }
