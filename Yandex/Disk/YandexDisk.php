@@ -245,7 +245,6 @@ class YandexDisk
         if(!$body)
             return false;
 
-
         $body = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><propertyupdate xmlns=\"DAV:\" xmlns:u=\"{$namespace}\">{$body}</propertyupdate>";
 
         $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
@@ -279,6 +278,7 @@ class YandexDisk
 
     /**
      * Удаление свойств у файла/папки
+     *
      * @param string $path
      * @param string|array $props
      * @param string $namespace
@@ -306,6 +306,7 @@ class YandexDisk
     /**
      * Публикация файла/папки
      * если папка/файл найдена то возвращает ссылку, иначе false
+     *
      * @param $path
      *
      * @return bool|string
@@ -317,6 +318,7 @@ class YandexDisk
 
     /**
      * Снятие публикации файла/папки возвращает true/false
+     *
      * @param $path
      *
      * @return bool
@@ -329,6 +331,7 @@ class YandexDisk
     /**
      * Проверка публикации файла/папки
      * если папка/файл опубликован то вернет ссылка, иначе false
+     *
      * @param $path
      *
      * @return mixed
@@ -338,7 +341,7 @@ class YandexDisk
         return $this->getProperties($path, ['public_url'], 'urn:yandex:disk:meta')['public_url'];
     }
 
-    public function getPreviewImage($path, $size = 'XXXS')
+    public function getPreviewImage($path, $size = 'XXXS', $filePath, $type = null)
     {
         if(!$path)
             throw new \Exception('path is required parameter');
@@ -349,8 +352,9 @@ class YandexDisk
             ],
             'query'   => [
                 'preview' => '',
-                'size' => $size
-            ]
+                'size'    => $size
+            ],
+            'infile'  => ''
         ]);
 
         $this->lastResponse = $response->exec();
@@ -359,6 +363,11 @@ class YandexDisk
             return false;
 
         return $this->lastResponse->getBody();
+    }
+
+    private function createStream($path, $type)
+    {
+
     }
 
     private function getDecode($body)
@@ -402,21 +411,20 @@ class YandexDisk
     {
         $array = false;
 
-        if ($node->hasChildNodes())
+        if($node->hasChildNodes())
         {
-            if ($node->childNodes->length == 1)
+            if($node->childNodes->length == 1)
             {
                 if($node->firstChild->nodeType === XML_TEXT_NODE)
                     $array = $node->firstChild->nodeValue;
                 else
                     $array[$node->firstChild->localName] = $node->firstChild->nodeValue;
-
             }
             else
             {
-                foreach ($node->childNodes as $childNode)
+                foreach($node->childNodes as $childNode)
                 {
-                    if ($childNode->nodeType != XML_TEXT_NODE)
+                    if($childNode->nodeType != XML_TEXT_NODE)
                     {
                         $array[$childNode->localName] = $this->getArray($childNode);
                     }

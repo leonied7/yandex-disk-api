@@ -68,6 +68,14 @@ class CurlWrapper
                     $this->body = $option;
                     curl_setopt($this->curl, CURLOPT_POSTFIELDS, $this->body);
                     break;
+                case 'infile':
+                    $this->stream = $option;
+                    curl_setopt($this->curl, CURLOPT_FILE, $this->stream);
+                    break;
+                case 'file':
+                    $this->stream = $option;
+                    curl_setopt($this->curl, CURLOPT_FILE, $this->stream);
+                    break;
                 default:
                     throw new \Exception("unknown option '{$optionName}'");
                     break;
