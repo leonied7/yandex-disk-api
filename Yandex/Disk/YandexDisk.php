@@ -341,32 +341,68 @@ class YandexDisk
         return $this->getProperties($path, ['public_url'], 'urn:yandex:disk:meta')['public_url'];
     }
 
-    public function getPreviewImage($path, $size = 'XXXS', $filePath, $type = null)
+    /**
+     * Получение превью картинки
+     * @param $path
+     * @param string $size
+     * @param bool|resource $stream ресурс файла, в который писать ответ
+     *
+     * @return bool|string
+     * @throws \Exception
+     */
+    public function getPreviewImage($path, $size = 'XXXS', $stream = false)
     {
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $response = new CurlWrapper('GET', $this->getPath($path), [
+        $options = [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}"
             ],
             'query'   => [
                 'preview' => '',
                 'size'    => $size
-            ],
-            'infile'  => ''
-        ]);
+            ]
+        ];
+
+        if($stream)
+            $options['infile'] = $stream;
+
+        $response = new CurlWrapper('GET', $this->getPath($path), $options);
 
         $this->lastResponse = $response->exec();
 
         if($this->lastResponse->getCode() != 200)
             return false;
 
+        if($stream)
+            return true;
+
         return $this->lastResponse->getBody();
     }
 
-    private function createStream($path, $type)
+    private function createStream($options)
     {
+        $arParams = [];
+
+        foreach($options as $key => $value)
+        {
+            switch($key)
+            {
+                case 'path':
+                case 'host':
+                case 'login':
+                case 'password':
+                    $arParams[$key] = $value;
+                    break;
+//                case 'connect':
+//                    if(gettype($value) != "resource")
+//                        throw new \InvalidArgumentException("{$key} can be only resource");
+//
+//                    $arParams[$key] = $value;
+//                    break;
+            }
+        }
 
     }
 
