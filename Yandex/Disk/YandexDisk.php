@@ -207,7 +207,7 @@ class YandexDisk
     /**
      * установка/удаление свойств для файла/папки
      *
-     * https://tech.yandex.ru/disk/doc/dg/reference/proppatch-docpage/
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/proppatch-docpage/
      *
      * @param $path
      * @param array $props
@@ -279,6 +279,8 @@ class YandexDisk
     /**
      * Удаление свойств у файла/папки
      *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/proppatch-docpage/
+     *
      * @param string $path
      * @param string|array $props
      * @param string $namespace
@@ -307,6 +309,8 @@ class YandexDisk
      * Публикация файла/папки
      * если папка/файл найдена то возвращает ссылку, иначе false
      *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/publish-docpage/
+     *
      * @param $path
      *
      * @return bool|string
@@ -318,6 +322,8 @@ class YandexDisk
 
     /**
      * Снятие публикации файла/папки возвращает true/false
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/publish-docpage/
      *
      * @param $path
      *
@@ -332,6 +338,8 @@ class YandexDisk
      * Проверка публикации файла/папки
      * если папка/файл опубликован то вернет ссылка, иначе false
      *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/publish-docpage/
+     *
      * @param $path
      *
      * @return mixed
@@ -343,6 +351,9 @@ class YandexDisk
 
     /**
      * Получение превью картинки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/preview-docpage/
+     *
      * @param $path
      * @param string $size
      * @param bool|resource $stream ресурс файла, в который писать ответ
@@ -381,6 +392,46 @@ class YandexDisk
         return $this->lastResponse->getBody();
     }
 
+    /**
+     * Запрос логина пользователя
+     * TODO:Можно возвращать массив значений
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/userinfo-docpage/
+     *
+     * @param string $params
+     *
+     * @return bool|string
+     */
+    public function getLogin($params = 'login')
+    {
+        $response = new CurlWrapper('GET', $this->getPath('/'), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+            ],
+            'query'   => [
+                'userinfo' => ''
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if($this->lastResponse->getCode() != 200)
+            return false;
+
+        $arResult = [];
+
+        $arData = explode("\n", trim($this->lastResponse->getBody(), "\n"));
+
+        foreach($arData as $data)
+        {
+            $element = explode(':', $data);
+
+            $arResult[$element[0]] = $element[1];
+        }
+
+        return $arResult['login'];
+    }
+
     private function createStream($options)
     {
         $arParams = [];
@@ -395,15 +446,14 @@ class YandexDisk
                 case 'password':
                     $arParams[$key] = $value;
                     break;
-//                case 'connect':
-//                    if(gettype($value) != "resource")
-//                        throw new \InvalidArgumentException("{$key} can be only resource");
-//
-//                    $arParams[$key] = $value;
-//                    break;
+                //                case 'connect':
+                //                    if(gettype($value) != "resource")
+                //                        throw new \InvalidArgumentException("{$key} can be only resource");
+                //
+                //                    $arParams[$key] = $value;
+                //                    break;
             }
         }
-
     }
 
     private function getDecode($body)
