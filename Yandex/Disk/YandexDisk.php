@@ -358,7 +358,7 @@ class YandexDisk
      * @param string $size
      * @param bool|resource $stream ресурс файла, в который писать ответ
      *
-     * @return bool|string
+     * @return bool|mixed
      * @throws \Exception
      */
     public function getPreviewImage($path, $size = 'XXXS', $stream = false)
