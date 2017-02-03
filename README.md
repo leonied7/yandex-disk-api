@@ -185,3 +185,81 @@ bool|string \Yandex\Disk\YandexDisk::checkPublish(string $path);
 if($url = $disk->checkPublish('/Музыка'))
     print_r($url);
 ```
+
+### Получение логина пользователя
+```php
+bool|string \Yandex\Disk\YandexDisk::getLogin();
+```
+
+**Примеры**
+
+```php
+//запрос логина
+$login = $disk->getLogin();
+echo $login;
+```
+
+### Получение превью картинки
+```php
+bool|mixed \Yandex\Disk\YandexDisk::getPreviewImage(string $path[[, string $size = 'XXXS',] bool|resource $stream = false]);
+```
+
+`$path` - путь на яндекс диске
+
+`$size` - размер превью
+
+`$stream` - поток открытого файла
+
+**Примеры**
+
+```php
+// получение картинки 100х100 возвращает весь результат в переменную
+$content = $disk->getPreviewImage('/test.jpg', '100x100');
+
+file_put_contents('/home/upload/tmp/file.jpg', $content);
+```
+
+```php
+// получение с использованием потока, в этом случае в переменную возвращается true|false
+$file = fopen('/home/upload/tmp/test.jpg', 'w');
+
+if($disk->getPreviewImage('/test.jpg', 'XL', $file))
+    echo 'успешно';
+
+fclose($file);
+```
+
+### Скачивание файла
+```php
+bool \Yandex\Disk\YandexDisk::getFile(string $path, recource $stream[[, bool|int $from = false], bool|int $to = false]);
+```
+
+`$path` - путь на яндекс диске
+
+`$stream` - поток файла
+
+`$from` - с какого байта запрашивать данные
+
+`$to` - до какого байта
+
+**Примеры**
+
+```php
+//получение файла
+$file = fopen('/home/upload/tmp/test.jpg', 'a');
+
+if($disk->getFile('/test.jpg', $file))
+    echo 'Это успех!';
+
+fclose($file);
+```
+
+```php
+//докачивание файла
+$localPath = '/home/upload/tmp/Navicat.rar';
+$file = fopen($localPath, 'a');
+
+$dir = $disk->getFile('/Navicat.rar', $file, filesize($localPath));
+
+fclose($file);
+```
