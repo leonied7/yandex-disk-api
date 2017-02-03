@@ -432,6 +432,43 @@ class YandexDisk
         return $arResult['login'];
     }
 
+    /**
+     * Скачивание файла, поддерживает дозагрузку файла
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/get-docpage/
+     *
+     * @param $path
+     * @param $stream
+     * @param bool|int $from
+     * @param bool|int $to
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function getFile($path, $stream, $from = false, $to = false)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(gettype($stream) != "resource")
+            throw new \Exception('stream is not resource');
+
+        $response = new CurlWrapper('GET', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ],
+            'infile'  => $stream,
+            'range'   => [$from, $to]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(!in_array($this->lastResponse->getCode(), [200, 206]))
+            return false;
+
+        return true;
+    }
+
     private function createStream($options)
     {
         $arParams = [];
