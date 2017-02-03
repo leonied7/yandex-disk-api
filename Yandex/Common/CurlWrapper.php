@@ -76,6 +76,10 @@ class CurlWrapper
                     $this->stream = $option;
                     curl_setopt($this->curl, CURLOPT_FILE, $this->stream);
                     break;
+                case 'range':
+                    $range = "{$option[0]}-{$option[1]}";
+                    curl_setopt($this->curl, CURLOPT_RANGE, $range);
+                    break;
                 default:
                     throw new \Exception("unknown option '{$optionName}'");
                     break;
