@@ -356,3 +356,17 @@ bool \Yandex\Disk\YandexDisk::move(string $path, string $destination[, bool $ove
 //перенесём и переименнуем `test1/test.jpg` в 'test2/file.jpg'
 $disk->move('test1/test.jpg', 'test2/file.jpg');
 ```
+
+### Удалени файла/папки
+```php
+bool \Yandex\Disk\YandexDisk::delete(string $path);
+```
+
+`$path` - путь на яндекс диске от куда копировать
+
+**Примеры**
+
+```php
+//удалим папку `test1` со всем содержимым
+$disk->delete('test1');
+```
