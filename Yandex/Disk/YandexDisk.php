@@ -575,6 +575,44 @@ class YandexDisk
         return false;
     }
 
+    /**
+     * Перемещение/переименование файла/папки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/move-docpage/
+     *
+     * @param string $path
+     * @param string $destination
+     * @param bool $overwrite
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function move($path, $destination, $overwrite = true)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(!$destination)
+            throw new \Exception('destination point is required parameter');
+
+        $overwrite = $overwrite ? 'T' : 'F';
+
+        $response = new CurlWrapper('MOVE', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Destination'   => $this->correctPath($destination),
+                'Overwrite'     => $overwrite
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [201]))
+            return true;
+
+        return false;
+    }
+
     private function createStream($options)
     {
         $arParams = [];
