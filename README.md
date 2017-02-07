@@ -231,7 +231,7 @@ fclose($file);
 
 ### Скачивание файла
 ```php
-bool \Yandex\Disk\YandexDisk::getFile(string $path, recource $stream[[, bool|int $from = false], bool|int $to = false]);
+bool \Yandex\Disk\YandexDisk::getFile(string $path, resource $stream[[, bool|int $from = false], bool|int $to = false]);
 ```
 
 `$path` - путь на яндекс диске
@@ -262,4 +262,97 @@ $file = fopen($localPath, 'a');
 $dir = $disk->getFile('/Navicat.rar', $file, filesize($localPath));
 
 fclose($file);
+```
+
+### Загрузка файла
+```php
+bool \Yandex\Disk\YandexDisk::putFile(string $path, resource $stream);
+```
+
+`$path` - путь на яндекс диске
+
+`$stream` - поток файла
+
+**Примеры**
+
+```php
+//загрузка файла
+
+$file = fopen('/home/upload/tmp/test.jpg', 'r');
+
+if($disk->putFile('/folder/test.jpg', $file))
+    echo 'Это успех!';
+
+fclose($file);
+```
+
+```php
+//загрузка файла, через ssh подключение
+
+//подключаемся по ssh
+$connect = ssh2_connect('host', 22);
+
+$authorize = ssh2_auth_password($connect, 'login', 'password');
+
+$auth = ssh2_sftp($connect);
+
+$file = fopen("ssh2.sftp://" . $auth . "/home/upload/tmp/test.jpg", 'r');
+
+if($disk->putFile('/folder/test.jpg', $file))
+    echo 'Это успех!';
+
+fclose($file);
+
+//закрываем подключение по ssh
+fclose($connect);
+```
+
+### Создание каталога
+```php
+bool \Yandex\Disk\YandexDisk::createDir(string $path);
+```
+
+`$path` - путь на яндекс диске
+
+**Примеры**
+
+```php
+//создадим папку test2 в корне
+$disk->createDir('/test2');
+```
+
+### Копирование файла/папки
+```php
+bool \Yandex\Disk\YandexDisk::copy(string $path, string $destination[, bool $overwrite = true]);
+```
+
+`$path` - путь на яндекс диске от куда копировать
+
+`$destination` - путь на яндекс диске куда копировать
+
+`$overwrite` - перезапись
+
+**Примеры**
+
+```php
+//копируем `test1/test.jpg` в 'test2/test.jpg'
+$disk->copy('test1/test.jpg', 'test2/test.jpg');
+```
+
+### Перемещение/переименование файла/папки
+```php
+bool \Yandex\Disk\YandexDisk::move(string $path, string $destination[, bool $overwrite = true]);
+```
+
+`$path` - путь на яндекс диске от куда копировать
+
+`$destination` - путь на яндекс диске куда копировать
+
+`$overwrite` - перезапись
+
+**Примеры**
+
+```php
+//перенесём и переименнуем `test1/test.jpg` в 'test2/file.jpg'
+$disk->move('test1/test.jpg', 'test2/file.jpg');
 ```
