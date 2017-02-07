@@ -477,6 +477,7 @@ class YandexDisk
      * @param string $path
      * @param resource $stream
      *
+     * @return bool
      * @throws \Exception
      */
     public function putFile($path, $stream)
@@ -502,6 +503,140 @@ class YandexDisk
         $this->lastResponse = $response->exec();
 
         if($this->lastResponse->getCode() == 201)
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Создание каталога
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/mkcol-docpage/
+     *
+     * @param string $path
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function createDir($path)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $response = new CurlWrapper('MKCOL', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [201, 405]))
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Копирование файла/папки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/copy-docpage/
+     *
+     * @param string $path
+     * @param string $destination
+     * @param bool $overwrite
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function copy($path, $destination, $overwrite = true)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(!$destination)
+            throw new \Exception('destination point is required parameter');
+
+        $overwrite = $overwrite ? 'T' : 'F';
+
+        $response = new CurlWrapper('COPY', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Destination'   => $this->correctPath($destination),
+                'Overwrite'     => $overwrite
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [201]))
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Перемещение/переименование файла/папки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/move-docpage/
+     *
+     * @param string $path
+     * @param string $destination
+     * @param bool $overwrite
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function move($path, $destination, $overwrite = true)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(!$destination)
+            throw new \Exception('destination point is required parameter');
+
+        $overwrite = $overwrite ? 'T' : 'F';
+
+        $response = new CurlWrapper('MOVE', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Destination'   => $this->correctPath($destination),
+                'Overwrite'     => $overwrite
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [201]))
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Удаление файла/папки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/delete-docpage/
+     *
+     * @param string $path
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function delete($path)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $response = new CurlWrapper('DELETE', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [204, 200]))
             return true;
 
         return false;
