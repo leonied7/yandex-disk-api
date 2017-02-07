@@ -357,7 +357,7 @@ bool \Yandex\Disk\YandexDisk::move(string $path, string $destination[, bool $ove
 $disk->move('test1/test.jpg', 'test2/file.jpg');
 ```
 
-### Удалени файла/папки
+### Удаление файла/папки
 ```php
 bool \Yandex\Disk\YandexDisk::delete(string $path);
 ```
