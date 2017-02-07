@@ -613,6 +613,35 @@ class YandexDisk
         return false;
     }
 
+    /**
+     * Удаление файла/папки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/delete-docpage/
+     *
+     * @param string $path
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function delete($path)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $response = new CurlWrapper('DELETE', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [204, 200]))
+            return true;
+
+        return false;
+    }
+
     private function createStream($options)
     {
         $arParams = [];
