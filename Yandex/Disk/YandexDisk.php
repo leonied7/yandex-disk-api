@@ -477,6 +477,7 @@ class YandexDisk
      * @param string $path
      * @param resource $stream
      *
+     * @return bool
      * @throws \Exception
      */
     public function putFile($path, $stream)
@@ -502,6 +503,35 @@ class YandexDisk
         $this->lastResponse = $response->exec();
 
         if($this->lastResponse->getCode() == 201)
+            return true;
+
+        return false;
+    }
+
+    /**
+     * Создание каталога
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/mkcol-docpage/
+     *
+     * @param string $path
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function createDir($path)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        $response = new CurlWrapper('MKCOL', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}"
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [201, 405]))
             return true;
 
         return false;
