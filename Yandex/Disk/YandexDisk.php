@@ -537,6 +537,32 @@ class YandexDisk
         return false;
     }
 
+    public function copy($path, $destination, $overwrite = true)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(!$destination)
+            throw new \Exception('destination point is required parameter');
+
+        $overwrite = $overwrite ? 'T' : 'F';
+
+        $response = new CurlWrapper('COPY', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Destination'   => $this->correctPath($destination),
+                'Overwrite'     => $overwrite
+            ]
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if(in_array($this->lastResponse->getCode(), [201]))
+            return true;
+
+        return false;
+    }
+
     private function createStream($options)
     {
         $arParams = [];
