@@ -537,6 +537,18 @@ class YandexDisk
         return false;
     }
 
+    /**
+     * Копирование файла/папки
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/copy-docpage/
+     *
+     * @param string $path
+     * @param string $destination
+     * @param bool $overwrite
+     *
+     * @return bool
+     * @throws \Exception
+     */
     public function copy($path, $destination, $overwrite = true)
     {
         if(!$path)
