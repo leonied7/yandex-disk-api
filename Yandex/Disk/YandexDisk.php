@@ -437,8 +437,8 @@ class YandexDisk
      *
      * @link https://tech.yandex.ru/disk/doc/dg/reference/get-docpage/
      *
-     * @param $path
-     * @param $stream
+     * @param string $path
+     * @param resource $stream
      * @param bool|int $from
      * @param bool|int $to
      *
@@ -467,6 +467,44 @@ class YandexDisk
             return false;
 
         return true;
+    }
+
+    /**
+     * загрузка файла, работает с открытыми потоками
+     *
+     * @link https://tech.yandex.ru/disk/doc/dg/reference/put-docpage/
+     *
+     * @param string $path
+     * @param resource $stream
+     *
+     * @throws \Exception
+     */
+    public function putFile($path, $stream)
+    {
+        if(!$path)
+            throw new \Exception('path is required parameter');
+
+        if(gettype($stream) != "resource")
+            throw new \Exception('stream is not resource');
+
+        $streamMeta = stream_get_meta_data($stream);
+
+        $response = new CurlWrapper('PUT', $this->getPath($path), [
+            'headers' => [
+                'Authorization' => "OAuth {$this->token}",
+                'Etag'          => md5_file($streamMeta['uri']),
+                'Sha256'        => hash_file('sha256', $streamMeta['uri']),
+                'Content-Type'  => mime_content_type($streamMeta['uri'])
+            ],
+            'file'    => $stream
+        ]);
+
+        $this->lastResponse = $response->exec();
+
+        if($this->lastResponse->getCode() == 201)
+            return true;
+
+        return false;
     }
 
     private function createStream($options)
@@ -569,6 +607,6 @@ class YandexDisk
     {
         $path = trim($path, DIRECTORY_SEPARATOR);
 
-        return $path ? DIRECTORY_SEPARATOR . trim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR : DIRECTORY_SEPARATOR;
+        return DIRECTORY_SEPARATOR . trim($path, DIRECTORY_SEPARATOR);
     }
 }

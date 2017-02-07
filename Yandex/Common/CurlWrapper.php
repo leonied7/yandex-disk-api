@@ -74,7 +74,8 @@ class CurlWrapper
                     break;
                 case 'file':
                     $this->stream = $option;
-                    curl_setopt($this->curl, CURLOPT_FILE, $this->stream);
+                    curl_setopt($this->curl, CURLOPT_INFILE, $this->stream);
+                    curl_setopt($this->curl, CURLOPT_PUT, true);
                     break;
                 case 'range':
                     $range = "{$option[0]}-{$option[1]}";
