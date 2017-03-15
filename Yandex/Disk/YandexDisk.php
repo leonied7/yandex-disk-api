@@ -17,11 +17,18 @@ class YandexDisk
 
     protected $url = "https://webdav.yandex.ru";
 
+    protected $handler = null;
+
     /**
      * последний ответ курла
      * @var CurlResponse
      */
     protected $lastResponse;
+
+    public function setHandler($handler)
+    {
+        $this->handler = $handler;
+    }
 
     public function getLastResponse()
     {
@@ -60,7 +67,7 @@ class YandexDisk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $response = new CurlWrapper('PROPFIND', $this->getPath($path), [
+        $response = $this->createWrapper('PROPFIND', $this->getPath($path), [
             'headers' => [
                 'Depth'         => '1',
                 'Authorization' => "OAuth {$this->token}"
@@ -117,7 +124,7 @@ class YandexDisk
                 break;
         }
 
-        $response = new CurlWrapper('PROPFIND', $this->getPath('/'), [
+        $response = $this->createWrapper('PROPFIND', $this->getPath('/'), [
             'headers' => [
                 'Depth'         => 0,
                 'Authorization' => "OAuth {$this->token}"
@@ -170,7 +177,7 @@ class YandexDisk
 
         $body = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><propfind xmlns=\"DAV:\">{$body}</propfind>";
 
-        $response = new CurlWrapper('PROPFIND', $this->getPath($path), [
+        $response = $this->createWrapper('PROPFIND', $this->getPath($path), [
             'headers' => [
                 'Depth'          => 0,
                 'Authorization'  => "OAuth {$this->token}",
@@ -247,7 +254,7 @@ class YandexDisk
 
         $body = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><propertyupdate xmlns=\"DAV:\" xmlns:u=\"{$namespace}\">{$body}</propertyupdate>";
 
-        $response = new CurlWrapper('PROPPATCH', $this->getPath($path), [
+        $response = $this->createWrapper('PROPPATCH', $this->getPath($path), [
             'headers' => [
                 'Authorization'  => "OAuth {$this->token}",
                 'Content-Length' => strlen($body),
@@ -379,7 +386,7 @@ class YandexDisk
         if($stream)
             $options['infile'] = $stream;
 
-        $response = new CurlWrapper('GET', $this->getPath($path), $options);
+        $response = $this->createWrapper('GET', $this->getPath($path), $options);
 
         $this->lastResponse = $response->exec();
 
@@ -404,7 +411,7 @@ class YandexDisk
      */
     public function getLogin($params = 'login')
     {
-        $response = new CurlWrapper('GET', $this->getPath('/'), [
+        $response = $this->createWrapper('GET', $this->getPath('/'), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}",
             ],
@@ -453,7 +460,7 @@ class YandexDisk
         if(gettype($stream) != "resource")
             throw new \Exception('stream is not resource');
 
-        $response = new CurlWrapper('GET', $this->getPath($path), [
+        $response = $this->createWrapper('GET', $this->getPath($path), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}"
             ],
@@ -490,7 +497,7 @@ class YandexDisk
 
         $streamMeta = stream_get_meta_data($stream);
 
-        $response = new CurlWrapper('PUT', $this->getPath($path), [
+        $response = $this->createWrapper('PUT', $this->getPath($path), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}",
                 'Etag'          => md5_file($streamMeta['uri']),
@@ -523,7 +530,7 @@ class YandexDisk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $response = new CurlWrapper('MKCOL', $this->getPath($path), [
+        $response = $this->createWrapper('MKCOL', $this->getPath($path), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}"
             ]
@@ -559,7 +566,7 @@ class YandexDisk
 
         $overwrite = $overwrite ? 'T' : 'F';
 
-        $response = new CurlWrapper('COPY', $this->getPath($path), [
+        $response = $this->createWrapper('COPY', $this->getPath($path), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}",
                 'Destination'   => $this->correctPath($destination),
@@ -597,7 +604,7 @@ class YandexDisk
 
         $overwrite = $overwrite ? 'T' : 'F';
 
-        $response = new CurlWrapper('MOVE', $this->getPath($path), [
+        $response = $this->createWrapper('MOVE', $this->getPath($path), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}",
                 'Destination'   => $this->correctPath($destination),
@@ -628,7 +635,7 @@ class YandexDisk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $response = new CurlWrapper('DELETE', $this->getPath($path), [
+        $response = $this->createWrapper('DELETE', $this->getPath($path), [
             'headers' => [
                 'Authorization' => "OAuth {$this->token}"
             ]
@@ -640,6 +647,11 @@ class YandexDisk
             return true;
 
         return false;
+    }
+
+    private function createWrapper($method, $uri, $params)
+    {
+        return new CurlWrapper($method, $uri, $params, $this->handler);
     }
 
     private function createStream($options)
