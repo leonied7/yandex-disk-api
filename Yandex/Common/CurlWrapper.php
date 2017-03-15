@@ -111,7 +111,7 @@ class CurlWrapper
 
     protected function execUserFunc(callable $handler)
     {
-        $this->setOpt($handler());
+        $this->setOpt(call_user_func($handler));
     }
 
     /**
