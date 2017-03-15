@@ -88,7 +88,7 @@ class CurlWrapper
         }
     }
 
-    function __construct($method, $uri, $options = [])
+    function __construct($method, $uri, $options = [], $handler = null)
     {
         $this->uri = $uri;
 
@@ -99,11 +99,36 @@ class CurlWrapper
         $this->prepareOptions($options);
 
         $this->setUrl();
+
+        if($handler)
+            $this->execUserFunc($handler);
     }
 
     protected function setUrl()
     {
         curl_setopt($this->curl, CURLOPT_URL, $this->getUrl());
+    }
+
+    protected function execUserFunc(callable $handler)
+    {
+        $this->setOpt($handler());
+    }
+
+    /**
+     * Установка дополнительных параметров для Curl
+     *
+     * @param array $arOptions
+     *
+     * @return $this
+     */
+    public function setOpt(array $arOptions = array())
+    {
+        foreach($arOptions as $key => $val)
+        {
+            curl_setopt($this->curl, $key, $val);
+        }
+
+        return $this;
     }
 
     /**
