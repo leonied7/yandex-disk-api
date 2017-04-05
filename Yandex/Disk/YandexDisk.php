@@ -86,12 +86,14 @@ class YandexDisk
 
         foreach($decodedBody as $element)
         {
-            if(!$thisFolder && ($element['href'] === $this->correctPath($path)))
+            if(!$thisFolder && ($element['href'] === $this->correctPath($path) . DIRECTORY_SEPARATOR))
                 continue;
 
             $result = $element['propstat']['prop'];
 
             $result['collection'] = isset($result['resourcetype']['collection']) ? 'dir' : 'file';
+
+            $result['href'] = $element['href'];
 
             $contents[] = $result;
         }
@@ -649,7 +651,7 @@ class YandexDisk
         return false;
     }
 
-    private function createWrapper($method, $uri, $params)
+    protected function createWrapper($method, $uri, $params)
     {
         return new CurlWrapper($method, $uri, $params, $this->handler);
     }
@@ -678,7 +680,7 @@ class YandexDisk
         }
     }
 
-    private function getDecode($body)
+    protected function getDecode($body)
     {
         $dom = new \DOMDocument();
 
@@ -694,7 +696,7 @@ class YandexDisk
         return $result;
     }
 
-    private function recurseXML($xml, &$result)
+    protected function recurseXML($xml, &$result)
     {
         $child_count = 0;
 
@@ -715,7 +717,7 @@ class YandexDisk
      *
      * @return bool
      */
-    private function getArray($node)
+    protected function getArray($node)
     {
         $array = false;
 
@@ -750,7 +752,7 @@ class YandexDisk
      *
      * @return string
      */
-    private function correctPath($path)
+    protected function correctPath($path)
     {
         $path = trim($path, DIRECTORY_SEPARATOR);
 
