@@ -1,6 +1,9 @@
 <?php
 
 namespace Yandex\Common;
+
+use Yandex\Common\Response\ResponseInterface;
+
 /**
  * Created by PhpStorm.
  * User: dnkolosov
@@ -47,6 +50,8 @@ class CurlWrapper
      * @var resource
      */
     protected $stream;
+
+    protected $responseHandler;
 
     protected function prepareOptions($options = [])
     {
@@ -112,6 +117,11 @@ class CurlWrapper
     protected function execUserFunc(callable $handler)
     {
         $this->setOpt(call_user_func($handler));
+    }
+
+    public function setResponseHandler(ResponseInterface $handler)
+    {
+        $this->responseHandler = $handler;
     }
 
     /**
@@ -186,6 +196,8 @@ class CurlWrapper
 
     /**
      * исполнение curl
+     *
+     * @return CurlResponse
      */
     public function exec()
     {
@@ -193,7 +205,8 @@ class CurlWrapper
         $response = new CurlResponse(
             $body,
             curl_getinfo($this->curl, CURLINFO_HTTP_CODE),
-            curl_getinfo($this->curl, CURLINFO_HEADER_OUT)
+            curl_getinfo($this->curl, CURLINFO_HEADER_OUT),
+            $this->responseHandler
         );
 
         if($this->stream)
