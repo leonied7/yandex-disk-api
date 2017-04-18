@@ -2,6 +2,7 @@
     "name": "leonied7/yandex-disk-api",
     "type": "project",
     "license": "MIT",
+    "minimum-stability": "dev",
     "authors": [
         {
             "name": "leonied7",
