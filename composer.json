@@ -1,0 +1,14 @@
+{
+    "name": "leonied7/yandex-disk-api",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "leonied7",
+            "email": "kdnn@mail.ru"
+        }
+    ],
+    "require": {
+        "servo/fluidxml": "^1.21"
+    }
+}
