@@ -351,7 +351,6 @@ class Disk
 
     /**
      * Запрос логина пользователя
-     * TODO:Можно возвращать массив значений
      *
      * @link https://tech.yandex.ru/disk/doc/dg/reference/userinfo-docpage/
      *
@@ -359,7 +358,7 @@ class Disk
      *
      * @return bool|string
      */
-    public function getLogin($params = 'login')
+    public function getLogin()
     {
         $this->lastResponse = $this->createQuery()
             ->setMethod('GET')
