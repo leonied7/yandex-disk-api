@@ -237,36 +237,6 @@ class Disk
     }
 
     /**
-     * Удаление свойств у файла/папки
-     *
-     * @deprecated
-     * @link https://tech.yandex.ru/disk/doc/dg/reference/proppatch-docpage/
-     *
-     * @param string $path
-     * @param string|array $props
-     * @param string $namespace
-     *
-     * @return bool
-     * @throws \Exception
-     */
-    public function removeProperties($path, $props, $namespace = 'default')
-    {
-        if(!$props)
-            throw new \Exception('props is required parameter');
-
-        $props = is_array($props) ? $props : array($props);
-
-        $arProps = [];
-
-        foreach($props as $prop)
-        {
-            $arProps[$prop] = false;
-        }
-
-        return $this->setProperties($path, $arProps, $namespace);
-    }
-
-    /**
      * Публикация файла/папки
      * если папка/файл найдена то возвращает ссылку, иначе false
      *

@@ -1,21 +1,33 @@
 # PHP библиотека к API Яндекс диска
 
+## Установка
+
+### Composer
+
+```php
+curl -s https://getcomposer.org/installer | php
+
+composer require leonied7/yandex-disk-api:dev-master
+```
+
 ## Использование
 
 ### Подключение
 ```php
-//Подключаем автозагрузчик классов
-require_once(__DIR__ . "/init.php");
+//Подключаем автозагрузчик
+require_once __DIR__ . "/vendor/autoload.php";
 
-$disk = new \Yandex\Disk\YandexDisk(TOKEN);
+$disk = new Yandex\Disk(TOKEN);
 ```
 
 ### Запрос содержимого каталога
 ```php
-array \Yandex\Disk\YandexDisk::directoryContents(string $path [, int $offset = 0, int $amount = null [, bool $thisFolder = false]]);
+array \Yandex\Disk::directoryContents(string $path [, Yandex\Common\PropPool $props = null [, int $offset = 0, int $amount = null [, bool $thisFolder = false]]]);
 ```
 
 `$path` - путь на яндекс диске
+
+`$props` - объект запрашиваемых свойств, если не указан, то выбираются стандартные свойства
 
 `$offset` - отступ
 
@@ -32,15 +44,13 @@ $dir = $disk->directoryContents('/Музыка');
 
 ```php
 // получим из содержимого папки 'backup' первые 5 элементов  
-$dir = $disk->directoryContents('/backup', 0, 5);
+$dir = $disk->directoryContents('/backup', null, 0, 5);
 ```
 
 ### Запрос свободного/занятого места
 ```php
-array|string \Yandex\Disk\YandexDisk::spaceInfo(string $info = '');
+array \Yandex\Disk::spaceInfo();
 ```
-
-`$info` - запрашиваемые данные. Возможные значения `'available'` / `'used'` / `''`
  
  **Примеры**
  
@@ -50,99 +60,122 @@ $info = $disk->spaceInfo();
 //вернёт примерно следующий результат
 Array
 (
-    [quota-used-bytes] => 160561779981
-    [quota-available-bytes] => 949687266035
+    [used] => 160561779981
+    [available] => 949687266035
 )
 ```
 
-```php
-//получим только занятое место
-$info = $disk->spaceInfo('used');
-//вернёт строковое значение
-```
 
 ### Получение свойств файла/папки
 ```php
-array \Yandex\Disk\YandexDisk::getProperties(string $path [, array $props = array() [, string $namespace = 'default']);
+array \Yandex\Disk::getProperties(string $path, Yandex\Common\PropPool $props);
 ```
 
 `$path` - путь на яндекс диске
 
-`$props` - массив запрашиваемых свойств, если массив пустой то вернёт стандартные свойства как при запросе содержимого
-
-`$namespace` - наймспэйс для сохранения свойств, не может быть пустым
+`$props` - объект свойств
 
 **Примеры**
 
 ```php
-//запросим свойства 'test' и 'getlastmodified' файла 'crontab'
-$arProperties = $disk->getProperties('/crontab', ['test']);
-//вернёт примерно следующий результат
-Array
-(
-)
-//свойство 'test' не найдено у файла, поэтому исключено из результата
-```
+//запросим свойства 'displayname', 'creationdate' с дефолтным namespace, 'quota-limit-bytes' с namespace 'urn:yandex:disk:meta' и 'test' с namespace 'test1' для папки '/backup_test/' 
+$props = new \Yandex\Common\PropPool(array('displayname', 'creationdate'));
 
-```php
-//запросим стандартные свойства папки 'backup'
-$arProperties = $disk->getProperties('/backup');
-//вернёт примерно следующий результат
-Array
+$props->set('quota-limit-bytes', 'urn:yandex:disk:meta')
+    ->set('test', 'test1');
+
+print_r($disk->getProperties('/backup_test/', $props));
+
+//результат будет примерно следующий
+[found] => Array
 (
-    [resourcetype] =>
-    [getlastmodified] => Wed, 09 Sep 2015 10:09:45 GMT
-    [displayname] => backup
-    [creationdate] => 2015-09-09T10:09:45Z
+   [0] => Array
+   (
+       [name] => quota-limit-bytes
+       [value] => 1110249046016
+       [namespace] => urn:yandex:disk:meta
+   )
+   [1] => Array
+   (
+       [name] => displayname
+       [value] => backup_test
+       [namespace] => DAV:
+   )
+   [2] => Array
+   (
+       [name] => creationdate
+       [value] => 2017-04-05T05:39:44Z
+       [namespace] => DAV:
+   )
 )
+[notFound] => Array
+(
+   [0] => Array
+   (
+       [name] => test
+       [value] =>
+       [namespace] => test1
+   )
+)
+
 ```
 
 ### Установка/удаление свойств файла/папки
 ```php
-bool|array \Yandex\Disk\YandexDisk::setProperties(string $path, array $props = array() [, string $namespace = 'default']);
+array \Yandex\Disk::changeProperties(string $path, Yandex\Common\PropPool $props);
 ```
 
 `$path` - путь на яндекс диске
 
-`$props` - массив устанавливаемых свойств
-
-`$namespace` - наймспэйс для установки свойств, не может быть пустым
+`$props` - объект свойств
 
 **Примеры**
 
 ```php
-//Установим для папки 'Музыка' свойство 'myprop1' и удалим свойство 'myprop2'
-$disk->setProperties('/Музыка', ['myprop1' => 'myvalue1', 'myprop2' => false]);
+//Установим для папки 'backup_test' свойство 'test' и 'ttt' с namespace 'test' и удалим свойство 'test' с namespace 'test1'
+$props = new \Yandex\Common\PropPool(array(array('name' => 'test', 'value' => 'test1'), array('name' => 'ttt', 'value' => '123')), 'test');
+
+$props->set('test', 'test1');
+
+print_r($disk->changeProperties('/backup_test/', $props));
+
+//результат
+Array
+(
+   [HTTP/1.1 200 OK] => Array
+   (
+       [0] => Array
+       (
+           [name] => test
+           [value] =>
+           [namespace] => test1
+       )
+       [1] => Array
+       (
+           [name] => ttt
+           [value] =>
+           [namespace] => test
+       )
+       [2] => Array
+       (
+           [name] => test
+           [value] =>
+           [namespace] => test
+       )
+   )
+)
 ```
 
-### Удаление свойств файла/папки
 ```php
-//Обёртка метода setProperties()
-bool \Yandex\Disk\YandexDisk::removeProperties(string $path, string|array $props [, $namespace = 'default'])
-```
+если попытаться изменить дефолтное свойства яндекса, то он вернет результат с другим ключом массива, отличным от 'HTTP/1.1 200 OK'
 
-`$path` - путь на яндекс диске
-
-`$props` - массив удаляемых свойств или имя свойства для удаления
-
-`$namespace` - наймспэйс для установки свойств, не может быть пустым
-
-**Примеры**
-
-```php
-//Удалим свойства 'myprop2' и 'myprop' у папки 'Музыка'
-$disk->removeProperties('/Музыка', ['myprop2', 'myprop']);
-```
-
-```php
-//Удалим свойство 'myprop1' у файла 'tetx.txt'
-$disk->removeProperties('/tetx.txt', 'myprop1');
+так же значения могут изменяться частично, в таком случае будет несколько массивов с соответствуюшими ключами ошибок
 ```
 
 ### Публикация файла/папки
 ```php
-//Обёртка метода setProperties()
-bool|string \Yandex\Disk\YandexDisk::startPublish(string $path);
+//Обёртка метода changeProperties()
+string \Yandex\Disk::startPublish(string $path);
 ```
 
 `$path` - путь на яндекс диске
@@ -150,15 +183,15 @@ bool|string \Yandex\Disk\YandexDisk::startPublish(string $path);
 **Примеры**
 
 ```php
-//если папка/файл найден, вернёт ссылку, иначе false
+//если папка/файл найден, вернёт ссылку
 if($url = $disk->startPublish('/Музыка'))
     print_r($url);
 ```
 
 ### Снятие публикации файла/папки
 ```php
-//Обёртка метода removeProperties()
-bool \Yandex\Disk\YandexDisk::stopPublish(string $path);
+//Обёртка метода changeProperties()
+bool \Yandex\Disk::stopPublish(string $path);
 ```
 
 `$path` - путь на яндекс диске
@@ -173,7 +206,7 @@ $disk->stopPublish('/Музыка');
 ### Проверка публикации файла/папки
 ```php
 //Обёртка метода getProperties()
-bool|string \Yandex\Disk\YandexDisk::checkPublish(string $path);
+bool|string \Yandex\Disk::checkPublish(string $path);
 ```
 
 `$path` - путь на яндекс диске
@@ -188,7 +221,7 @@ if($url = $disk->checkPublish('/Музыка'))
 
 ### Получение логина пользователя
 ```php
-bool|string \Yandex\Disk\YandexDisk::getLogin();
+string \Yandex\Disk::getLogin();
 ```
 
 **Примеры**
@@ -201,7 +234,7 @@ echo $login;
 
 ### Получение превью картинки
 ```php
-bool|mixed \Yandex\Disk\YandexDisk::getPreviewImage(string $path[[, string $size = 'XXXS',] bool|resource $stream = false]);
+bool|mixed \Yandex\Disk::getPreviewImage(string $path[[, string $size = 'XXXS',] bool|resource $stream = false]);
 ```
 
 `$path` - путь на яндекс диске
@@ -231,7 +264,7 @@ fclose($file);
 
 ### Скачивание файла
 ```php
-bool \Yandex\Disk\YandexDisk::getFile(string $path, resource $stream[[, bool|int $from = false], bool|int $to = false]);
+bool \Yandex\Disk::getFile(string $path, resource $stream[[, bool|int $from = false], bool|int $to = false]);
 ```
 
 `$path` - путь на яндекс диске
@@ -266,7 +299,7 @@ fclose($file);
 
 ### Загрузка файла
 ```php
-bool \Yandex\Disk\YandexDisk::putFile(string $path, resource $stream);
+bool \Yandex\Disk::putFile(string $path, resource $stream);
 ```
 
 `$path` - путь на яндекс диске
@@ -309,7 +342,7 @@ fclose($connect);
 
 ### Создание каталога
 ```php
-bool \Yandex\Disk\YandexDisk::createDir(string $path);
+bool \Yandex\Disk::createDir(string $path);
 ```
 
 `$path` - путь на яндекс диске
@@ -323,7 +356,7 @@ $disk->createDir('/test2');
 
 ### Копирование файла/папки
 ```php
-bool \Yandex\Disk\YandexDisk::copy(string $path, string $destination[, bool $overwrite = true]);
+bool \Yandex\Disk::copy(string $path, string $destination[, bool $overwrite = true]);
 ```
 
 `$path` - путь на яндекс диске от куда копировать
@@ -341,7 +374,7 @@ $disk->copy('test1/test.jpg', 'test2/test.jpg');
 
 ### Перемещение/переименование файла/папки
 ```php
-bool \Yandex\Disk\YandexDisk::move(string $path, string $destination[, bool $overwrite = true]);
+bool \Yandex\Disk::move(string $path, string $destination[, bool $overwrite = true]);
 ```
 
 `$path` - путь на яндекс диске от куда копировать
@@ -359,7 +392,7 @@ $disk->move('test1/test.jpg', 'test2/file.jpg');
 
 ### Удаление файла/папки
 ```php
-bool \Yandex\Disk\YandexDisk::delete(string $path);
+bool \Yandex\Disk::delete(string $path);
 ```
 
 `$path` - путь на яндекс диске от куда копировать
