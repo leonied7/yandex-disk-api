@@ -19,11 +19,12 @@ class CurlResponse
      */
     protected $handler;
 
-    function __construct($body, $code, $header, $handler)
+    function __construct($body, $code, $header, $type, $handler)
     {
         $this->data['bodyResponse'] = $this->data['body'] = $body;
         $this->data['code'] = $code;
         $this->data['header'] = $header;
+        $this->data['contentType'] = $type;
 
         $this->setHandler($handler);
 
@@ -39,22 +40,27 @@ class CurlResponse
 
     function getBody()
     {
-        return $this->data['body'];
+        return $this->getData('body');
     }
 
     function getBodyResponse()
     {
-        return $this->data['bodyResponse'];
+        return $this->getData('bodyResponse');
     }
 
     function getCode()
     {
-        return $this->data['code'];
+        return $this->getData('code');
     }
 
     function getHeader()
     {
-        return $this->data['header'];
+        return $this->getData('header');
+    }
+
+    function getType()
+    {
+        return $this->getData('contentType');
     }
 
     function getData($key)
@@ -67,6 +73,6 @@ class CurlResponse
         if(!$this->handler instanceof ResponseInterface)
             return;
 
-        $this->data['body'] = $this->handler->setData($this->getBodyResponse())->prepare();
+        $this->data['body'] = $this->handler->setResponse($this)->prepare();
     }
 }

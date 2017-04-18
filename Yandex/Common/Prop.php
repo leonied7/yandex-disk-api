@@ -10,86 +10,65 @@ namespace Yandex\Common;
 
 class Prop
 {
-    protected $props = array();
+    protected $name;
+    protected $namespace;
+    protected $value;
 
     /**
-     * @param string|array $propName
-     * @param mixed $value
-     * @param string $namespace
+     * Prop constructor.
+     *
+     * @param array $arParams
      */
-    function __construct($propName = null, $namespace = '', $value = null)
+    function __construct($arParams = array())
     {
-        if($propName)
-            $this->setProps($propName, $namespace, $value);
+        $this->name = $arParams['name'];
+        $this->namespace = $arParams['namespace'];
+        $this->value = $arParams['value'];
     }
 
     /**
-     * @param string|array $propName
-     *
-     * Example:
-     * array(
-     *      'name'
-     *      'value'
-     * )
-     *
-     * @param mixed $value
-     * @param string $namespace
+     * @return mixed
      */
-    function setProps($propName, $namespace = '', $value = null)
+    public function getName()
     {
-        if(!is_array($propName))
-            $propName = array(
-                'name' => $propName,
-                'value' => $value
-            );
+        return $this->name;
+    }
 
+    /**
+     * @return mixed
+     */
+    public function getValue()
+    {
+        return $this->value;
+    }
 
-        if(isset($propName['name']))
-            $propName = array($propName);
-
-        foreach($propName as &$prop)
-        {
-            if(!is_array($prop))
-            {
-                $prop = array(
-                    'name' => $prop
-                );
-            }
-
-            if(!$prop['name'])
-                continue;
-
-            $this->props[$namespace][$prop['name']] = $prop['value'];
-        }
+    /**
+     * @return mixed
+     */
+    public function getNamespace()
+    {
+        return $this->namespace;
     }
 
     /**
      * @return array
      */
-    function getProps()
-    {
-        $result = array();
-
-        foreach($this->props as $namespace => $props)
-        {
-            foreach($props as $prop => $value)
-            {
-                $result[] = array(
-                    'name' => $prop,
-                    'namespace' => $namespace,
-                    'value' => $value
-                );
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * @return array
-     */
-    function getNamespaces()
-    {
-        return array_keys($this->props);
-    }
+//    function getProps()
+//    {
+//        $result = array();
+//
+//        foreach($this->props as $namespace => $props)
+//        {
+//            foreach($props as $prop => $value)
+//            {
+//                $result[] = array(
+//                    'name' => $prop,
+//                    'namespace' => $namespace,
+//                    'value' => $value
+//                );
+//            }
+//        }
+//
+//        return $result;
+//    }
 }

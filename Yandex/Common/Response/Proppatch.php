@@ -10,28 +10,8 @@ namespace Yandex\Common\Response;
 
 use Yandex\Common\XmlReader;
 
-class Proppatch implements ResponseInterface
+class Proppatch extends ResponseInterface
 {
-    protected $data;
-
-    protected $dom;
-
-    public function __construct()
-    {
-    }
-
-    /**
-     * @param string $data
-     *
-     * @return $this
-     */
-    function setData($data)
-    {
-        $this->data = $data;
-
-        return $this;
-    }
-
     /**
      * @return mixed
      */
@@ -46,7 +26,7 @@ class Proppatch implements ResponseInterface
 
         $this->dom->loadXML($this->data);
 
-        if(!$this->dom->hasChildNodes())
+        if(!$this->checkDom())
             return $this->data;
 
         $result = array(

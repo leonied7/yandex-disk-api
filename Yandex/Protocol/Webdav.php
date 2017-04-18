@@ -9,6 +9,7 @@
 namespace Yandex\Protocol;
 
 use Yandex\Common\Prop;
+use Yandex\Common\PropPool;
 use Yandex\Protocol\Method\Propfind;
 use Yandex\Protocol\Method\Proppatch;
 
@@ -23,11 +24,11 @@ class Webdav
     }
 
     /**
-     * @param Prop $prop
+     * @param PropPool $prop
      *
      * @return Proppatch
      */
-    public function propPatchMethod(Prop $prop)
+    public function propPatchMethod(PropPool $prop)
     {
         return new Proppatch($prop);
     }

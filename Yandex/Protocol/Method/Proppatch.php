@@ -10,13 +10,14 @@ namespace Yandex\Protocol\Method;
 
 use FluidXml\FluidXml;
 use Yandex\Common\Prop;
+use Yandex\Common\PropPool;
 
 class Proppatch implements Method
 {
     protected $xml;
 
     /**
-     * @var Prop
+     * @var PropPool
      */
     protected $props;
 
@@ -25,7 +26,7 @@ class Proppatch implements Method
 
     /*protected $namespaces = array();*/
 
-    function __construct(Prop $prop)
+    function __construct(PropPool $prop)
     {
         $this->xml = new FluidXml('propertyupdate');
 
@@ -35,7 +36,7 @@ class Proppatch implements Method
     }
 
 
-    public function setProps(Prop $prop)
+    public function setProps(PropPool $prop)
     {
         $this->props = $prop;
     }
@@ -76,10 +77,10 @@ class Proppatch implements Method
     {
         foreach($this->props->getProps() as $prop)
         {
-            if($prop['value'])
-                $this->propsSet[$prop['namespace']][$prop['name']] = $prop['value'];
+            if($prop->getValue())
+                $this->propsSet[$prop->getNamespace()][$prop->getName()] = $prop->getValue();
             else
-                $this->propsRemove[$prop['namespace']][$prop['name']] = $prop['name'];
+                $this->propsRemove[$prop->getNamespace()][$prop->getName()] = $prop->getName();
         }
     }
 
@@ -97,11 +98,15 @@ class Proppatch implements Method
         {
             foreach($props as $prop => $value)
             {
+                $arProp = array(
+                    '@' => $value
+                );
+
+                if($namespace)
+                    $arProp['@xmlns'] = $namespace;
+
                 $set->addChild(array(
-                    $prop => array(
-                        '@' => $value,
-                        '@xmlns' => $namespace
-                    )
+                    $prop => $arProp
                 ));
             }
         }
@@ -121,10 +126,13 @@ class Proppatch implements Method
         {
             foreach($props as $prop)
             {
+                $arProp = array();
+
+                if($namespace)
+                    $arProp['@xmlns'] = $namespace;
+
                 $remove->addChild(array(
-                    $prop => array(
-                        '@xmlns' => $namespace
-                    )
+                    $prop => $arProp
                 ));
             }
         }

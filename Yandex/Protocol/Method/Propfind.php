@@ -10,6 +10,7 @@ namespace Yandex\Protocol\Method;
 
 use FluidXml\FluidXml;
 use Yandex\Common\Prop;
+use Yandex\Common\PropPool;
 
 class Propfind implements Method
 {
@@ -17,6 +18,9 @@ class Propfind implements Method
 
     protected $method;
 
+    /**
+     * @var Prop[]
+     */
     protected $props = array();
 
     function __construct()
@@ -28,11 +32,11 @@ class Propfind implements Method
     }
 
     /**
-     * @param Prop $prop
+     * @param PropPool $prop
      *
      * @return $this
      */
-    function setProp(Prop $prop)
+    function setProp(PropPool $prop)
     {
         $this->props = $prop->getProps();
 
@@ -72,10 +76,13 @@ class Propfind implements Method
         {
             foreach($this->props as $prop)
             {
+                $arProp = array();
+
+                if($prop->getNamespace())
+                    $arProp['@xmlns'] = $prop->getNamespace();
+
                 $method->addChild(array(
-                    $prop['name'] => array(
-                        '@xmlns' => $prop['namespace']
-                    )
+                    $prop->getName() => $arProp
                 ));
             }
         }

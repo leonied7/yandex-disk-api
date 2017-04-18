@@ -206,6 +206,7 @@ class CurlWrapper
             $body,
             curl_getinfo($this->curl, CURLINFO_HTTP_CODE),
             curl_getinfo($this->curl, CURLINFO_HEADER_OUT),
+            curl_getinfo($this->curl, CURLINFO_CONTENT_TYPE),
             $this->responseHandler
         );
 

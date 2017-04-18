@@ -22,6 +22,15 @@ class QueryBuilder
     protected $params = array();
     protected $handler;
     protected $body = "";
+    /**
+     * @var resource
+     */
+    protected $infile;
+    /**
+     * @var resource
+     */
+    protected $file;
+    protected $range = array();
 
     protected $responseHandler;
 
@@ -129,6 +138,27 @@ class QueryBuilder
         return $this;
     }
 
+    public function setInFile($stream)
+    {
+        $this->infile = $stream;
+
+        return $this;
+    }
+
+    public function setFile($stream)
+    {
+        $this->file = $stream;
+
+        return $this;
+    }
+
+    public function setRange($range = array())
+    {
+        $this->range = $range;
+
+        return $this;
+    }
+
     /**
      * выполнение запроса
      *
@@ -155,6 +185,14 @@ class QueryBuilder
         $result['query'] = $this->params;
 
         $result['body'] = $this->body;
+
+        $result['infile'] = $this->infile;
+
+        $result['file'] = $this->file;
+
+        $result['range'] = $this->range;
+
+        $result = array_filter($result);
 
         return $result;
     }

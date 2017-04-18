@@ -11,10 +11,15 @@ namespace Yandex;
 
 use Yandex\Common\CurlResponse;
 use Yandex\Common\CurlWrapper;
-use Yandex\Common\Prop;
+use Yandex\Common\PropPool;
 use Yandex\Common\QueryBuilder;
+use Yandex\Common\Response\Copy;
+use Yandex\Common\Response\Delete;
+use Yandex\Common\Response\Get;
+use Yandex\Common\Response\MkCol;
 use Yandex\Common\Response\Propfind;
 use Yandex\Common\Response\Proppatch;
+use Yandex\Common\Response\Put;
 use Yandex\Protocol\Webdav;
 
 class Disk
@@ -51,11 +56,13 @@ class Disk
 
     /**
      * получение содержимого папки $path, так же по стандарту из результата удаляется текущая папка, если требуется оставить установить $thisFolder в true
+     * через $props можно выбрать необходимые свойства для всех элементов
      * $offset и $amount указаны в документации
      *
      * @link https://tech.yandex.ru/disk/doc/dg/reference/propfind_contains-request-docpage/
      *
      * @param $path
+     * @param PropPool|null $props
      * @param int $offset
      * @param null $amount
      * @param bool $thisFolder
@@ -63,12 +70,12 @@ class Disk
      * @return array
      * @throws \Exception
      */
-    public function directoryContents($path, $offset = 0, $amount = null, $thisFolder = false)
+    public function directoryContents($path, PropPool $props = null, $offset = 0, $amount = null, $thisFolder = false)
     {
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $this->lastResponse = $this->createQuery()
+        $queryBuilder = $this->createQuery()
             ->setMethod('PROPFIND')
             ->setUrl($this->getPath($path))
             ->setHeaders(array('Depth' => '1'))
@@ -76,8 +83,19 @@ class Disk
                 'offset' => $offset,
                 'amount' => $amount
             ))
-            ->setResponseHandler(new Propfind())
-            ->exec();
+            ->setResponseHandler(new Propfind());
+
+        //формирует и передаёт тело запроса, если передан $props
+        if($props instanceof PropPool)
+        {
+            $webDav = new Webdav();
+
+            $body = $webDav->propfindMethod()->setProp($props)->getProp();
+
+            $queryBuilder->setBody($body);
+        }
+
+        $this->lastResponse = $queryBuilder->exec();
 
         $contents = $this->lastResponse->getBody();
 
@@ -109,9 +127,10 @@ class Disk
 
         $webDav = new Webdav();
 
+        $propPool = new PropPool($info);
 
         $body = $webDav->propfindMethod()
-            ->setProp(new Prop($info))
+            ->setProp($propPool)
             ->getProp();
 
         $this->lastResponse = $this->createQuery()
@@ -142,12 +161,12 @@ class Disk
      * @link https://tech.yandex.ru/disk/doc/dg/reference/propfind_property-request-docpage/
      *
      * @param $path
-     * @param Prop $props
+     * @param PropPool $props
      *
      * @return array
      * @throws \Exception
      */
-    public function getProperties($path, Prop $props)
+    public function getProperties($path, PropPool $props)
     {
         if(!$path)
             throw new \Exception('path is required parameter');
@@ -160,7 +179,7 @@ class Disk
 
         $this->lastResponse = $this->createQuery()
             ->setMethod('PROPFIND')
-            ->setUrl($this->getPath('/'))
+            ->setUrl($this->getPath($path))
             ->setHeaders(array("Depth" => 0))
             ->setBody($body)
             ->setResponseHandler(new Propfind())
@@ -168,7 +187,12 @@ class Disk
 
         $result = array();
 
-        foreach($this->lastResponse->getBody() as $folder)
+        $answer = $this->lastResponse->getBody();
+
+        if(!is_array($answer))
+            return $answer;
+
+        foreach($answer as $folder)
         {
             $result = $folder['props'];
         }
@@ -182,12 +206,12 @@ class Disk
      * @link https://tech.yandex.ru/disk/doc/dg/reference/proppatch-docpage/
      *
      * @param $path
-     * @param Prop $props
+     * @param PropPool $props
      *
      * @return string|array
      * @throws \Exception
      */
-    public function changeProperties($path, Prop $props)
+    public function changeProperties($path, PropPool $props)
     {
         if(!$path)
             throw new \Exception('path is required parameter');
@@ -254,15 +278,17 @@ class Disk
      */
     public function startPublish($path)
     {
-        $propObj = new Prop('public_url', 'urn:yandex:disk:meta', true);
+        $propObj = new PropPool('public_url', 'urn:yandex:disk:meta', true);
 
-        foreach($this->changeProperties($path, $propObj) as $props)
+        $result = $this->changeProperties($path, $propObj);
+
+        foreach($result as $props)
         {
             foreach($props as $prop)
                 return $prop['value'];
         }
 
-        return false;
+        return $result;
     }
 
     /**
@@ -276,7 +302,19 @@ class Disk
      */
     public function stopPublish($path)
     {
-        return $this->removeProperties($path, 'public_url', 'urn:yandex:disk:meta');
+        $propObj = new PropPool('public_url', "urn:yandex:disk:meta");
+
+        $result = $this->changeProperties($path, $propObj);
+
+        foreach($result as $key => $props)
+        {
+            if(strpos($key, '200 OK') === false)
+                return false;
+
+            return true;
+        }
+
+        return $result;
     }
 
     /**
@@ -291,7 +329,20 @@ class Disk
      */
     public function checkPublish($path)
     {
-        return $this->getProperties($path, ['public_url'], 'urn:yandex:disk:meta')['public_url'];
+        $propObj = new PropPool('public_url', "urn:yandex:disk:meta");
+
+        $result = $this->getProperties($path, $propObj);
+
+        foreach($result as $key => $props)
+        {
+            if($key !== 'found')
+                return false;
+
+            foreach($props as $prop)
+                return $prop['value'];
+        }
+
+        return $result;
     }
 
     /**
@@ -311,25 +362,16 @@ class Disk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $options = [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}"
-            ],
-            'query'   => [
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('GET')
+            ->setUrl($this->getPath($path))
+            ->setParams(array(
                 'preview' => '',
                 'size'    => $size
-            ]
-        ];
-
-        if($stream)
-            $options['infile'] = $stream;
-
-        $response = $this->createWrapper('GET', $this->getPath($path), $options);
-
-        $this->lastResponse = $response->exec();
-
-        if($this->lastResponse->getCode() != 200)
-            return false;
+            ))
+            ->setInFile($stream)
+            ->setResponseHandler(new Get())
+            ->exec();
 
         if($stream)
             return true;
@@ -349,19 +391,14 @@ class Disk
      */
     public function getLogin($params = 'login')
     {
-        $response = $this->createWrapper('GET', $this->getPath('/'), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}",
-            ],
-            'query'   => [
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('GET')
+            ->setUrl($this->getPath('/'))
+            ->setParams(array(
                 'userinfo' => ''
-            ]
-        ]);
-
-        $this->lastResponse = $response->exec();
-
-        if($this->lastResponse->getCode() != 200)
-            return false;
+            ))
+            ->setResponseHandler(new Get())
+            ->exec();
 
         $arResult = [];
 
@@ -395,21 +432,16 @@ class Disk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        if(gettype($stream) != "resource")
+        if(!is_resource($stream))
             throw new \Exception('stream is not resource');
 
-        $response = $this->createWrapper('GET', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}"
-            ],
-            'infile'  => $stream,
-            'range'   => [$from, $to]
-        ]);
-
-        $this->lastResponse = $response->exec();
-
-        if(!in_array($this->lastResponse->getCode(), [200, 206]))
-            return false;
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('GET')
+            ->setUrl($this->getPath($path))
+            ->setInFile($stream)
+            ->setRange(array($from, $to))
+            ->setResponseHandler(new Get())
+            ->exec();
 
         return true;
     }
@@ -430,27 +462,24 @@ class Disk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        if(gettype($stream) != "resource")
+        if(!is_resource($stream))
             throw new \Exception('stream is not resource');
 
         $streamMeta = stream_get_meta_data($stream);
 
-        $response = $this->createWrapper('PUT', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}",
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('PUT')
+            ->setUrl($this->getPath($path))
+            ->setHeaders(array(
                 'Etag'          => md5_file($streamMeta['uri']),
                 'Sha256'        => hash_file('sha256', $streamMeta['uri']),
                 'Content-Type'  => mime_content_type($streamMeta['uri'])
-            ],
-            'file'    => $stream
-        ]);
+            ))
+            ->setFile($stream)
+            ->setResponseHandler(new Put())
+            ->exec();
 
-        $this->lastResponse = $response->exec();
-
-        if($this->lastResponse->getCode() == 201)
-            return true;
-
-        return false;
+        return true;
     }
 
     /**
@@ -468,18 +497,13 @@ class Disk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $response = $this->createWrapper('MKCOL', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}"
-            ]
-        ]);
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('MKCOL')
+            ->setUrl($this->getPath($path))
+            ->setResponseHandler(new MkCol())
+            ->exec();
 
-        $this->lastResponse = $response->exec();
-
-        if(in_array($this->lastResponse->getCode(), [201, 405]))
-            return true;
-
-        return false;
+        return true;
     }
 
     /**
@@ -504,20 +528,17 @@ class Disk
 
         $overwrite = $overwrite ? 'T' : 'F';
 
-        $response = $this->createWrapper('COPY', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}",
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('COPY')
+            ->setUrl($this->getPath($path))
+            ->setHeaders(array(
                 'Destination'   => $this->correctPath($destination),
                 'Overwrite'     => $overwrite
-            ]
-        ]);
+            ))
+            ->setResponseHandler(new Copy())
+            ->exec();
 
-        $this->lastResponse = $response->exec();
-
-        if(in_array($this->lastResponse->getCode(), [201]))
-            return true;
-
-        return false;
+        return true;
     }
 
     /**
@@ -542,20 +563,17 @@ class Disk
 
         $overwrite = $overwrite ? 'T' : 'F';
 
-        $response = $this->createWrapper('MOVE', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}",
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('MOVE')
+            ->setUrl($this->getPath($path))
+            ->setHeaders(array(
                 'Destination'   => $this->correctPath($destination),
                 'Overwrite'     => $overwrite
-            ]
-        ]);
+            ))
+            ->setResponseHandler(new Copy())
+            ->exec();
 
-        $this->lastResponse = $response->exec();
-
-        if(in_array($this->lastResponse->getCode(), [201]))
-            return true;
-
-        return false;
+        return true;
     }
 
     /**
@@ -573,16 +591,11 @@ class Disk
         if(!$path)
             throw new \Exception('path is required parameter');
 
-        $response = $this->createWrapper('DELETE', $this->getPath($path), [
-            'headers' => [
-                'Authorization' => "OAuth {$this->token}"
-            ]
-        ]);
-
-        $this->lastResponse = $response->exec();
-
-        if(in_array($this->lastResponse->getCode(), [204, 200]))
-            return true;
+        $this->lastResponse = $this->createQuery()
+            ->setMethod('DELETE')
+            ->setUrl($this->getPath($path))
+            ->setResponseHandler(new Delete())
+            ->exec();
 
         return false;
     }
@@ -599,12 +612,23 @@ class Disk
         return $builder->setHeaders(array("Authorization" => "OAuth {$this->token}"));
     }
 
-
+    /**
+     * @deprecated
+     * @param $method
+     * @param $uri
+     * @param $params
+     *
+     * @return CurlWrapper
+     */
     protected function createWrapper($method, $uri, $params)
     {
         return new CurlWrapper($method, $uri, $params, $this->handler);
     }
 
+    /**
+     * @deprecated
+     * @return array
+     */
     protected function getDecode()
     {
         $dom = new \DOMDocument();
@@ -625,23 +649,8 @@ class Disk
         return $result;
     }
 
-    //    protected function recurseXML($xml, &$result)
-    //    {
-    //        $child_count = 0;
-    //
-    //        foreach($xml as $key => $value)
-    //        {
-    //            $child_count++;
-    //            if(!$this->recurseXML($value, $result))
-    //            {
-    //                $result[(string)$key] = (string)$value;
-    //            }
-    //        }
-    //
-    //        return $child_count;
-    //    }
-
     /**
+     * @deprecated
      * @param \DOMNode $node
      *
      * @return array
@@ -687,9 +696,6 @@ class Disk
         return $array;
     }
 
-    protected function prepareResponse()
-    {
-    }
 
     /**
      * корректирует путь
