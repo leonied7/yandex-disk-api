@@ -9,7 +9,11 @@
             "email": "kdnn@mail.ru"
         }
     ],
+    "autoload": {
+        "files": ["./src/init.php"]
+    },
     "require": {
-        "servo/fluidxml": "^1.21"
+        "servo/fluidxml": "^1.21",
+        "php": ">=5.6"
     }
 }
