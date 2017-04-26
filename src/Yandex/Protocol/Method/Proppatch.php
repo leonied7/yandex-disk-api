@@ -66,7 +66,7 @@ class Proppatch implements Method
 
         $this->generateRemove();
 
-        return $this->xml->xml();
+        return $this->finalXml->xml();
     }
 
     /**
