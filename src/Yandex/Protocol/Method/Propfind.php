@@ -69,8 +69,9 @@ class Propfind implements Method
         if(!$this->method)
             throw new \Exception('method is empty');
 
+        $xml = new FluidXml($this->xml->xml());
 
-        $method = $this->xml->addChild($this->method, true);
+        $method = $xml->addChild($this->method, true);
 
         if($this->method === 'prop')
         {
@@ -87,6 +88,6 @@ class Propfind implements Method
             }
         }
 
-        return $this->xml->xml();
+        return $xml->xml();
     }
 }

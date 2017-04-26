@@ -11,6 +11,7 @@ namespace Yandex;
 
 use Yandex\Common\CurlResponse;
 use Yandex\Common\CurlWrapper;
+use Yandex\Common\MultiCurlWrapper;
 use Yandex\Common\PropPool;
 use Yandex\Common\QueryBuilder;
 use Yandex\Common\Response\Copy;
@@ -603,10 +604,6 @@ class Disk
         $dom = new \DOMDocument();
 
         $dom->loadXML($this->lastResponse->getBody());
-
-        print_r($this->lastResponse->getBody());
-
-        print_r($dom->hasChildNodes());
 
         $result = [];
 

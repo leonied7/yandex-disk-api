@@ -127,7 +127,7 @@ class QueryBuilder
     /**
      * установка обработчика ответа
      *
-     * @param \ResponseInterface $handler
+     * @param ResponseInterface $handler
      *
      * @return $this
      */
@@ -166,6 +166,13 @@ class QueryBuilder
      */
     public function exec()
     {
+        $query = $this->getWrapper();
+
+        return $query->exec();
+    }
+
+    public function getWrapper()
+    {
         $params = $this->prepareParams();
 
         $query = new CurlWrapper($this->method, $this->url, $params, $this->handler);
@@ -173,7 +180,7 @@ class QueryBuilder
         if($this->responseHandler)
             $query->setResponseHandler($this->responseHandler);
 
-        return $query->exec();
+        return $query;
     }
 
     protected function prepareParams()

@@ -15,6 +15,10 @@ use Yandex\Common\PropPool;
 class Proppatch implements Method
 {
     protected $xml;
+    /**
+     * @var FluidXml
+     */
+    protected $finalXml;
 
     /**
      * @var PropPool
@@ -50,6 +54,10 @@ class Proppatch implements Method
      */
     public function xml()
     {
+        $this->propsSet = array();
+        $this->propsRemove = array();
+        $this->finalXml = new FluidXml($this->xml->xml());
+
         $this->setNamespaces();
 
         $this->prepareProps();
@@ -69,7 +77,7 @@ class Proppatch implements Method
     protected function setNamespaces()
     {
         foreach($this->props->getNamespaces() as $namespace)
-            $this->xml->namespace($namespace, $namespace);
+            $this->finalXml->namespace($namespace, $namespace);
 
     }
 
@@ -92,7 +100,7 @@ class Proppatch implements Method
         if(!$this->propsSet)
             return;
 
-        $set = $this->xml->addChild('set', true)->addChild('prop', true);
+        $set = $this->finalXml->addChild('set', true)->addChild('prop', true);
 
         foreach($this->propsSet as $namespace => $props)
         {
@@ -120,7 +128,7 @@ class Proppatch implements Method
         if(!$this->propsRemove)
             return;
 
-        $remove = $this->xml->addChild('remove', true)->addChild('prop', true);
+        $remove = $this->finalXml->addChild('remove', true)->addChild('prop', true);
 
         foreach($this->propsRemove as $namespace => $props)
         {

@@ -1,5 +1,10 @@
 # PHP библиотека к API Яндекс диска
 
+## Требования
+
+* PHP 5.6+
+* Расширение php_curl
+
 ## Установка
 
 ### Composer
@@ -359,9 +364,9 @@ $disk->createDir('/test2');
 bool \Yandex\Disk::copy(string $path, string $destination[, bool $overwrite = true]);
 ```
 
-`$path` - путь на яндекс диске от куда копировать
+`$path` - путь запроса
 
-`$destination` - путь на яндекс диске куда копировать
+`$destination` - путь назначения
 
 `$overwrite` - перезапись
 
@@ -377,9 +382,9 @@ $disk->copy('test1/test.jpg', 'test2/test.jpg');
 bool \Yandex\Disk::move(string $path, string $destination[, bool $overwrite = true]);
 ```
 
-`$path` - путь на яндекс диске от куда копировать
+`$path` - путь запроса
 
-`$destination` - путь на яндекс диске куда копировать
+`$destination` - путь назначения
 
 `$overwrite` - перезапись
 
@@ -395,7 +400,7 @@ $disk->move('test1/test.jpg', 'test2/file.jpg');
 bool \Yandex\Disk::delete(string $path);
 ```
 
-`$path` - путь на яндекс диске от куда копировать
+`$path` - путь запроса
 
 **Примеры**
 

@@ -125,6 +125,14 @@ class CurlWrapper
     }
 
     /**
+     * @return mixed
+     */
+    public function getResponseHandler()
+    {
+        return $this->responseHandler;
+    }
+
+    /**
      * Установка дополнительных параметров для Curl
      *
      * @param array $arOptions
@@ -180,6 +188,14 @@ class CurlWrapper
     {
         $this->stream = $stream;
         curl_setopt($this->curl, CURLOPT_INFILE, $this->stream);
+    }
+
+    /**
+     * @return resource
+     */
+    public function getCurl()
+    {
+        return $this->curl;
     }
 
     /**
