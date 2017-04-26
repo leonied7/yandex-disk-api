@@ -677,7 +677,7 @@ class Disk
         return DIRECTORY_SEPARATOR . trim($path, DIRECTORY_SEPARATOR);
     }
 
-    private function getPath($path)
+    protected function getPath($path)
     {
         return $this->url . $this->correctPath($path);
     }
