@@ -1,2 +1,7 @@
 .idea
 /dev.php
+/vendor
+/tests/data.json
+*.txt
+!file.txt
+/composer.lock

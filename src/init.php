@@ -1,24 +1,18 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: dnkolosov
- * Date: 20.01.2017
- * Time: 15:21
- */
+
+namespace Leonied7\Yandex;
+
 // Подключаем автозагрузчик классов
-spl_autoload_register(function ($class)
-{
-    $arClass = explode('\\', trim($class, '\\'));
+spl_autoload_register(function ($class) {
+    $classDir = '/';
+    $fileExtension = '.php';
+    if (strpos($class, __NAMESPACE__ . '\\') !== false) {
+        $class = str_replace(__NAMESPACE__ . '\\', '', $class);
+        $className = str_replace('\\', DIRECTORY_SEPARATOR, $class);
+        $filePath = __DIR__ . $classDir . $className . $fileExtension;
 
-    $className = array_pop($arClass);
-
-    $dir = '';
-
-    if($arClass)
-        $dir = implode(DIRECTORY_SEPARATOR, $arClass) . DIRECTORY_SEPARATOR;
-
-    $filePath = __DIR__ . DIRECTORY_SEPARATOR . $dir . $className . '.php';
-
-    if(file_exists($filePath))
-        include $filePath;
+        if (file_exists($filePath)) {
+            require($filePath);
+        }
+    }
 });
