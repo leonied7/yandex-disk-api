@@ -4,3 +4,4 @@
 /tests/data.json
 *.txt
 !file.txt
+/composer.lock

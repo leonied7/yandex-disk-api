@@ -62,21 +62,20 @@ $yandexDisk = new Disk('OAuth-токен');
     * [\Leonied7\Yandex\Disk\Property\Immutable](https://github.com/leonied7/yandex-disk-api/wiki/Immutable-Property) - неизменяемое свойство
     * [\Leonied7\Yandex\Disk\Property\Mutable](https://github.com/leonied7/yandex-disk-api/wiki/Mutable-Property) - изменяемое свойство
     
-* \Yandex\Disk\Model\Item
-    * [\Yandex\Disk\Item\File](https://github.com/leonied7/yandex-disk-api/wiki/File) - объект файла
-    * [\Yandex\Disk\Item\Directory](https://github.com/leonied7/yandex-disk-api/wiki/Directory) - объект директории
-* [\Yandex\Disk\Model\Decorator](https://github.com/leonied7/yandex-disk-api/wiki/Decorator-Model)
-    * \Yandex\Disk\Decorator\Loop - пустой декоратор, возвращает входящий результат без изменений
-    * \Yandex\Disk\Decorator\CurrentElement - возвращает данные о элементе с входных путём  
-    * \Yandex\Disk\Decorator\CurrentElementCollection - возвращает данные о коллекции элемента с входных путём  
-    * \Yandex\Disk\Decorator\CurrentElementCollectionItem - возвращает данные о свойстве коллекции элемента с входных путём
-    * \Yandex\Disk\Decorator\CurrentElementCollectionItemValue - возвращает значение свойства коллекции элемента с входных путём
-    * \Yandex\Disk\Decorator\CurrentElementFailCollection - возвращает массив ошибочных коллекций элемента с входных путём
-* [\Yandex\Disk\Model\Stream](https://github.com/leonied7/yandex-disk-api/wiki/Stream-Model)
-    * \Yandex\Disk\Stream\Loop - пустая обертка, не открывает потоков, сделана для получения результат в результат (используется по умолчанию)
-    * \Yandex\Disk\Stream\ReadFile - открывает файл на чтение
-    * \Yandex\Disk\Stream\WriteFile - открывает файл на запись, удаляя всё содержимое
-    * \Yandex\Disk\Stream\WriteAppendFile - открывает файл на запись на дозапись
+* \Leonied7\Yandex\Disk\Item\Item
+    * [\Leonied7\Yandex\Disk\Item\File](https://github.com/leonied7/yandex-disk-api/wiki/File-Item) - объект файла
+    * [\Leonied7\Yandex\Disk\Item\Directory](https://github.com/leonied7/yandex-disk-api/wiki/Directory-Item) - объект директории
+* [\Leonied7\Yandex\Disk\Model\Decorator](https://github.com/leonied7/yandex-disk-api/wiki/Decorator-Model)
+    * \Leonied7\Yandex\Disk\Decorator\Loop - пустой декоратор, возвращает входящий результат без изменений
+    * \Leonied7\Yandex\Disk\Decorator\CurrentElement - возвращает данные о элементе с входных путём  
+    * \Leonied7\Yandex\Disk\Decorator\CurrentElementCollection - возвращает данные о коллекции элемента с входных путём  
+    * \Leonied7\Yandex\Disk\Decorator\CurrentElementCollectionItem - возвращает данные о свойстве коллекции элемента с входных путём
+    * \Leonied7\Yandex\Disk\Decorator\CurrentElementCollectionItemValue - возвращает значение свойства коллекции элемента с входных путём
+    * \Leonied7\Yandex\Disk\Decorator\CurrentElementFailCollection - возвращает массив ошибочных коллекций элемента с входных путём
+    * \Leonied7\Yandex\Disk\Decorator\ExplodeData - возвращает разбитую строку на массив типа "ключ => значение"
+* [\Leonied7\Yandex\Disk\Model\Stream](https://github.com/leonied7/yandex-disk-api/wiki/Stream-Model)
+    * \Leonied7\Yandex\Disk\Stream\Loop - пустая обертка, не открывает потоков, сделана для получения результата в тело запроса (используется по умолчанию)
+    * \Leonied7\Yandex\Disk\Stream\File - осуществляет работу с потоком файла, используется для записи/чтения файла
 ## Использование
 ### [Запрос информации о пользователе](https://tech.yandex.ru/disk/doc/dg/reference/userinfo-docpage/)
 ```php
@@ -96,23 +95,23 @@ Array
 ```
 ### [Запрос свободного/занятого места](https://tech.yandex.ru/disk/doc/dg/reference/space-request-docpage/)
 ```php
-/** @var \Yandex\Disk\Collection\Property $spaceCollection */
+/** @var \Leonied7\Yandex\Disk\Collection\PropertyCollection $spaceCollection */
 $spaceCollection = $yandexDisk->spaceInfo();
 //поиск в коллекции свойство с имененем 'quota-available-bytes'
-/** @var \Yandex\Disk\Model\Property $available */
+/** @var \Leonied7\Yandex\Disk\Property\Immutable $available */
 $available = $spaceCollection->find('quota-available-bytes');
 echo $available->getValue(); //свободное места
 
-/** @var \Yandex\Disk\Model\Property $used */
+/** @var \Leonied7\Yandex\Disk\Property\Immutable $used */
 $used = $spaceCollection->find('quota-used-bytes');
 echo $used->getValue(); //занятое места
 ```
 
 ### [Загрузка файла (Применимо только для файлов)](https://tech.yandex.ru/disk/doc/dg/reference/put-docpage/)
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
-$file->upload(new \Yandex\Disk\Stream\ReadFile('/path/to/local/file')); //bool
+$file->upload(new Disk\Stream\File('/path/to/local/file', Disk\Stream\File::MODE_READ)); //bool
 ```
 
 ### [Скачивание файла (Применимо только для файлов)](https://tech.yandex.ru/disk/doc/dg/reference/get-docpage/)
@@ -120,119 +119,120 @@ SDK поддерживает скачивание файлов нескольк�
 1. Потоковое скачивание
 
     ```php
-    /** @var \Yandex\Disk\Item\File $file */
+    /** @var Disk\Item\File $file */
     $file = $yandexDisk->file('/path/to/file/');
-    $file->download(new \Yandex\Disk\Stream\WriteFile('/path/to/local/file')); //bool
+    $file->download(new Disk\Stream\File('/path/to/local/file', Disk\Stream\File::MODE_WRITE)); //bool
     ```
 2. Потоковое скачивание частями
 
     ```php
-    /** @var \Yandex\Disk\Item\File $file */
+    /** @var Disk\Item\File $file */
     $file = $yandexDisk->file('/path/to/file/');
     //скачивание первых 5 байт
-    $file->download(new \Yandex\Disk\Stream\WriteFile('/path/to/local/file'), 0, 5); //bool
+    $file->download(new Disk\Stream\File('/path/to/local/file', Disk\Stream\File::MODE_WRITE), 0, 5); //bool
     //скачивание с 6 байта до конца 
-    $file->download(new \Yandex\Disk\Stream\WriteAppendFile('/path/to/local/file'), 6); //bool
+    $file->download(new Disk\Stream\File('/path/to/local/file', Disk\Stream\File::MODE_WRITE_APPEND), 6); //bool
     ```
 3. Скачивание без потока
 
     ```php
-    /** @var \Yandex\Disk\Item\File $file */
+    /** @var Disk\Item\File $file */
     $file = $yandexDisk->file('/path/to/file/');
     $file->download(); //bool
-    file_put_contents('/path/to/local/file', $file->getLastResult()->getResult());
+    // получение последнего результата запроса
+    $result = Disk\Collection\ResultList::getInstance()->getLast();
+    file_put_contents('/path/to/local/file', $result->getActualResult());
     ```
     
 ### [Получение превью картинок (Применимо только для файлов)](https://tech.yandex.ru/disk/doc/dg/reference/preview-docpage/)
 Первым параметром передаётся размер превью, может быть применён любой из документации
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
-$file->getPreview('S', new \Yandex\Disk\Stream\WriteFile('/path/to/local/file/'));
+$file->getPreview('S', new Disk\Stream\File('/path/to/local/file/', Disk\Stream\File::MODE_WRITE));
 ```
 > Превью может быть получена потоком, либо без потока
 
 ### [Создание директории (Применимо только для директорий)](https://tech.yandex.ru/disk/doc/dg/reference/mkcol-docpage/)
 ```php
-/** @var \Yandex\Disk\Item\Directory $directory */
+/** @var Disk\Item\Directory $directory */
 $directory = $yandexDisk->directory('/path/to/directory/');
 $directory->create(); // bool
 ```
 
 ### [Получение содержимого директории (Применимо только для директорий)](https://tech.yandex.ru/disk/doc/dg/reference/contains-request-docpage/)
 ```php
-/** @var \Yandex\Disk\Item\Directory $directory */
+/** @var Disk\Item\Directory $directory */
 $directory = $yandexDisk->directory('/path/to/directory/');
-/** @var \Yandex\Disk\Model\Item[] $arChild */
+/** @var Disk\Item\Item[] $arChild */
 $arChild = $directory->getChildren();
-/** @var \Yandex\Disk\Model\Item $child */
-foreach ($arChild as $child)
-{
-    if($child->isDirectory()) {
-        /** @var \Yandex\Disk\Item\Directory $directory */
+/** @var Disk\Item\Item $child */
+foreach ($arChild as $child) {
+    if ($child->isDirectory()) {
+        /** @var Disk\Item\Directory $directory */
         $directory = $child;
         //работа с директорией
     } else {
-        /** @var \Yandex\Disk\Item\File $file */
+        /** @var Disk\Item\File $file */
         $file = $child;
         //работа с файлом
     }
 }
 ```
 
-Так же первым параметром можно передать объект типа `\Yandex\Disk\Collection\Property` для получения свойств для всех элементов.
+Так же первым параметром можно передать объект типа [\Leonied7\Yandex\Disk\Collection\PropertyCollection](https://github.com/leonied7/yandex-disk-api/wiki/Property-Collection) для получения свойств для всех элементов.
 
 Так же 2 и 3 параметром можно указать `offset(смещение)` и `amount(количество)` - для получение только необходимого диапозона элементов.
 
 ### [Проверка существования элемента (Применимо для файла/директории)](https://tech.yandex.ru/disk/doc/dg/reference/property-request-docpage/)
 **Пример написан для файла, но метод так же применим для директории**
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->has(); // bool
 ```
 > Так как для проверки существования используется метод запроса свойств, то по умолчанию Яндекс.Диск отдаёт свойства. 
-При вызове метода `has()` можно передать объект типа `\Yandex\Disk\Collection\Property`. 
+При вызове метода `has()` можно передать объект типа [\Leonied7\Yandex\Disk\Collection\PropertyCollection](https://github.com/leonied7/yandex-disk-api/wiki/Property-Collection). 
 
 Пример:
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
-$collection = new \Yandex\Disk\Collection\Property();
+$collection = new Disk\Collection\PropertyCollection();
 $collection
-    ->add('getcontenttype', 'DAV:')
-    ->add('displayname', 'DAV:')
-    ->add('myprop', 'mynamespace');
+    ->add('getcontenttype', Disk\Model\Property::IMMUTABLE_NAMESPACES['dav']) //запрос типа содержимого
+    ->add('displayname', Disk\Model\Property::IMMUTABLE_NAMESPACES['dav']) //запрос имени содержимого
+    ->add('myprop', 'mynamespace'); //полученис своего свойства
 $file->has($collection); // bool
 ```
 > Если объект не передаётся, то выбираются все доступные свойства автоматически.
 
 **Получить пришедшие свойства можно следущим образом:**
 ```php
-/** @var \Yandex\Disk\Collection\Property $collection */
+/** @var Disk\Collection\PropertyCollection $collection */
 $collection = $file->getProperties();
 ```
 или
 ```php
-/** @var \Yandex\Disk\Collection\Property $collection */
-$collection = $file->getLastResult()->getConvertedResult();
+/** @var Disk\Collection\PropertyCollection $collection */
+$collection1 = Disk\Collection\ResultList::getInstance()->getLast()->getResult();
 ```
 > Результат будет хранить только успешно полученные свойства.
 
 Для получения ошибочных свойств
 ```php
-/** @var \Yandex\Disk\Collection\PropertyFail[] $convertedResult */
-$failCollections = $file->getLastResult()->getDecorateResult(new \Yandex\Disk\Decorator\CurrentElementFailCollection($file->getPath()));
+/** @var Disk\Collection\PropertyFail[] $failCollections */
+$failCollections = Disk\Collection\ResultList::getInstance()->getLast()->getDecorateResult(new Disk\Decorator\CurrentElementFailCollection($file->getPath()));
 foreach ($failCollections as $failCollection) {
-    $failCollection->getStatus() //получение статуса ответа от Яндекс.Диска
-    //так же можно применять такие же методы что и для \Yandex\Disk\Collection\Property
+    $failCollection->getStatus(); //получение статуса ответа от Яндекс.Диска для коллекции
+    //так же можно применять такие же методы что и для Disk\Property\Immutable
 }
 ```
 
 ### [Копирование элемента (Применимо для файла/директории)](https://tech.yandex.ru/disk/doc/dg/reference/copy-docpage/)
 **Пример написан для файла, но метод так же применим для директории**
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->copy('/path/to/copy/'); // bool
 ```
@@ -242,7 +242,7 @@ $file->copy('/path/to/copy/'); // bool
 ### [Перемещение элемента (Применимо для файла/директории)](https://tech.yandex.ru/disk/doc/dg/reference/move-docpage/)
 **Пример написан для файла, но метод так же применим для директории**
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->move('/path/to/move/'); // bool
 ```
@@ -252,7 +252,7 @@ $file->move('/path/to/move/'); // bool
 ### [Удаление элемента (Применимо для файла/директории)](https://tech.yandex.ru/disk/doc/dg/reference/delete-docpage/)
 **Пример написан для файла, но метод так же применим для директории**
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->delete(); // bool
 ```
@@ -287,16 +287,15 @@ foreach ($loadCollection as $property) {
 $failCollections = $file->getLastResult()->getDecorateResult(new \Yandex\Disk\Decorator\CurrentElementFailCollection($file->getPath()));
 foreach ($failCollections as $failCollection) {
     $failCollection->getStatus() //получение статуса ответа от Яндекс.Диска
-    //так же можно применять такие же методы что и для \Yandex\Disk\Collection\Property
 }
 ```
-
+> полное описание ошибочный коллекций [\Leonied7\Yandex\Disk\Collection\PropertyFail](https://github.com/leonied7/yandex-disk-api/wiki/Property-Fail-Collection)
 ### Получение существующих свойств (Применимо для файла/директории)
 **Пример написан для файла, но метод так же применим для директории**
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
-/** @var \Yandex\Disk\Collection\Property $propertyCollection */
+/** @var Disk\Collection\PropertyCollection $propertyCollection */
 $propertyCollection = $file->getExistProperties();
 ```
 > **Внимание!!!** свойства приходят без значений и не могут быть получены через `$file->getProperties();`
@@ -309,9 +308,9 @@ $propertyCollection = $file->getExistProperties();
 
     Добавляем свойства `myprop` и `propmy` с namespace `mynamespace` значения `foo` и `bar` соответственно. Удаляем свойство `propprop`
     ```php
-    /** @var \Yandex\Disk\Item\File $file */
+    /** @var Disk\Item\File $file */
     $file = $yandexDisk->file('/path/to/file/');
-    $propertyCollection = new \Yandex\Disk\Collection\Property();
+    $propertyCollection = new Disk\Collection\PropertyCollection();
     $propertyCollection
         ->add('myprop', 'mynamespace', 'foo')
         ->add('propmy', 'mynamespace', 'bar')
@@ -325,16 +324,16 @@ $propertyCollection = $file->getExistProperties();
     
     Загружаем свойства `myprop`, `propmy`, `propprop`, `quota-available-bytes`
     ```php
-    /** @var \Yandex\Disk\Item\File $file */
+    /** @var Disk\Item\File $file */
     $file = $yandexDisk->file('/path/to/file/');
-    $propertyCollection = new \Yandex\Disk\Collection\Property();
+    $propertyCollection = new Disk\Collection\PropertyCollection();
     $propertyCollection
         ->add('myprop', 'mynamespace')
         ->add('propmy', 'mynamespace')
-        ->add('quota-available-bytes', 'DAV:')
+        ->add('quota-available-bytes', Disk\Model\Property::IMMUTABLE_NAMESPACES['dav'])
         ->add('propprop', 'mynamespace');
-        
-    /** @var \Yandex\Disk\Collection\Property $loadCollection */
+    
+    /** @var Disk\Collection\PropertyCollection $loadCollection */
     $loadCollection = $file->loadProperties($propertyCollection);
     ```
     
@@ -343,7 +342,7 @@ $propertyCollection = $file->getExistProperties();
     
     Для получения только изменяемых свойств коллекции
     ```php
-    /** @var \Yandex\Disk\Model\VariableProperty $property */
+    /** @var Disk\Property\Mutable $property */
     foreach ($loadCollection->getChangeable() as $property) {
         $property->setValue('baz'); //устанавливаем новое значение
     }
@@ -353,7 +352,7 @@ $propertyCollection = $file->getExistProperties();
     // добавляем новое свойство
     $loadCollection->add('newprop', 'mynamespace', 'bar');
     // добавляем неизменяемое свойств (свойство не будет сохранятся)
-    $loadCollection->addImmutable('immutable', 'mynamespace', 'immut');
+    $loadCollection->add('immutable', Disk\Model\Property::IMMUTABLE_NAMESPACES['dav'], 'immut');
     ```
     
     После этого сохраняем измененные значения
@@ -365,18 +364,18 @@ $propertyCollection = $file->getExistProperties();
 **Пример написан для файла, но метод так же применим для директории**
 
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->startPublish(); // bool
 //получение публичной ссылки
-$file->getLastResult()->getConvertedResult(); // string
+Disk\Collection\ResultList::getInstance()->getLast()->getResult(); // string
 ```
 
 ### [Закрытие публикации элемента (Применимо для файла/директории)](https://tech.yandex.ru/disk/doc/dg/reference/publish-docpage/)
 **Пример написан для файла, но метод так же применим для директории**
 
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->stopPublish(); // bool
 ```
@@ -385,9 +384,9 @@ $file->stopPublish(); // bool
 **Пример написан для файла, но метод так же применим для директории**
 
 ```php
-/** @var \Yandex\Disk\Item\File $file */
+/** @var Disk\Item\File $file */
 $file = $yandexDisk->file('/path/to/file/');
 $file->checkPublish(); // bool
 //получение публичной ссылки
-$file->getLastResult()->getConvertedResult(); // string
+Disk\Collection\ResultList::getInstance()->getLast()->getResult(); // string
 ```

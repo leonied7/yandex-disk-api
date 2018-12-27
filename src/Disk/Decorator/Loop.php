@@ -12,7 +12,7 @@ namespace Leonied7\Yandex\Disk\Decorator;
 use Leonied7\Yandex\Disk\Model\Decorator;
 
 /**
- * Class Loop используется для формата изменения ответа, не изменяет ответ
+ * Class Loop пустой декоратор, возвращает входящий результат без изменений
  * @package Leonied7\Yandex\Disk\Decorator
  */
 class Loop implements Decorator

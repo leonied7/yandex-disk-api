@@ -10,7 +10,7 @@
 namespace Leonied7\Yandex\Disk\Model;
 
 /**
- * Interface Decorator используется для формата изменения ответ
+ * Interface Decorator используется для изменения формата ответ
  * @package Leonied7\Yandex\Disk\Model
  */
 interface Decorator
