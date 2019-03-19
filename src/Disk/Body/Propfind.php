@@ -8,9 +8,9 @@
 
 namespace Leonied7\Yandex\Disk\Body;
 
+use FluidXml\FluidContext;
 use FluidXml\FluidXml;
 use Leonied7\Yandex\Disk\Collection\PropertyCollection;
-use Leonied7\Yandex\Disk\Exception\Exception;
 use Leonied7\Yandex\Disk\Model\Body;
 
 /**
@@ -20,29 +20,34 @@ use Leonied7\Yandex\Disk\Model\Body;
  */
 class Propfind implements Body
 {
+    const METHOD_PROPERTIES = 'prop';
+    const METHOD_ALL_PROPERTIES = 'allprop';
+    const METHOD_PROPERTIES_NAME = 'propname';
+
+
     /** @var FluidXml объект xml */
     protected $xml;
     /** @var string запроса */
-    protected $method;
+    protected $method = self::METHOD_ALL_PROPERTIES;
     /** @var PropertyCollection коллекция свойств */
-    protected $props;
+    protected $propertyCollection;
 
     public function __construct()
     {
-        $this->props = new PropertyCollection();
+        $this->propertyCollection = new PropertyCollection();
         $this->xml = new FluidXml('propfind');
         $this->xml->setAttribute('xmlns', 'DAV:');
     }
 
     /**
      * установка коллекции свойств
-     * @param PropertyCollection $prop
+     * @param PropertyCollection $propertyCollection
      * @return $this
      */
-    public function setProps(PropertyCollection $prop)
+    public function setPropertyCollection(PropertyCollection $propertyCollection)
     {
-        $this->props = $prop;
-        $this->get();
+        $this->propertyCollection = $propertyCollection;
+        $this->setPropertiesMethod();
         return $this;
     }
 
@@ -50,9 +55,9 @@ class Propfind implements Body
      * установка метода - получить свойства и значения
      * @return $this
      */
-    public function get()
+    public function setPropertiesMethod()
     {
-        $this->method = 'prop';
+        $this->method = self::METHOD_PROPERTIES;
         return $this;
     }
 
@@ -60,9 +65,9 @@ class Propfind implements Body
      * установка метода - получить все свойства и значения
      * @return $this
      */
-    public function getAll()
+    public function setPropertiesAllMethod()
     {
-        $this->method = 'allprop';
+        $this->method = self::METHOD_ALL_PROPERTIES;
         return $this;
     }
 
@@ -70,43 +75,41 @@ class Propfind implements Body
      * установка метода - получить все свойства без значений
      * @return $this
      */
-    public function getNames()
+    public function setPropertiesNameMethod()
     {
-        $this->method = 'propname';
+        $this->method = self::METHOD_PROPERTIES_NAME;
         return $this;
     }
 
     /**
      * формирование запроса
      * @return string
-     * @throws Exception
      */
-    public function xml()
+    public function build()
     {
-        if(!$this->method) {
-            throw new Exception('method is empty');
-        }
-
         $xml = new FluidXml($this->xml->xml());
-
         $method = $xml->addChild($this->method, true);
 
-        if($this->method === 'prop')
+        if($this->method === self::METHOD_PROPERTIES)
         {
-            foreach($this->props as $prop)
-            {
-                $arProp = [];
-
-                if($prop->getNamespace()) {
-                    $arProp['@xmlns'] = $prop->getNamespace();
-                }
-
-                $method->addChild([
-                    $prop->getName() => $arProp
-                ]);
-            }
+            $this->buildPropertiesXml($method);
         }
 
         return $xml->xml();
+    }
+
+    private function buildPropertiesXml(FluidContext $xml)
+    {
+        foreach($this->propertyCollection as $property)
+        {
+            $childValue = [];
+            if($property->getNamespace()) {
+                $childValue['@xmlns'] = $property->getNamespace();
+            }
+
+            $xml->addChild([
+                $property->getName() => $childValue
+            ]);
+        }
     }
 }
