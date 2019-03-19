@@ -66,7 +66,6 @@ $yandexDisk = new Disk('OAuth-токен');
     * [\Leonied7\Yandex\Disk\Item\File](https://github.com/leonied7/yandex-disk-api/wiki/File-Item) - объект файла
     * [\Leonied7\Yandex\Disk\Item\Directory](https://github.com/leonied7/yandex-disk-api/wiki/Directory-Item) - объект директории
 * [\Leonied7\Yandex\Disk\Model\Decorator](https://github.com/leonied7/yandex-disk-api/wiki/Decorator-Model)
-    * \Leonied7\Yandex\Disk\Decorator\Loop - пустой декоратор, возвращает входящий результат без изменений
     * \Leonied7\Yandex\Disk\Decorator\CurrentElement - возвращает данные о элементе с входных путём  
     * \Leonied7\Yandex\Disk\Decorator\CurrentElementCollection - возвращает данные о коллекции элемента с входных путём  
     * \Leonied7\Yandex\Disk\Decorator\CurrentElementCollectionItem - возвращает данные о свойстве коллекции элемента с входных путём
@@ -74,7 +73,6 @@ $yandexDisk = new Disk('OAuth-токен');
     * \Leonied7\Yandex\Disk\Decorator\CurrentElementFailCollection - возвращает массив ошибочных коллекций элемента с входных путём
     * \Leonied7\Yandex\Disk\Decorator\ExplodeData - возвращает разбитую строку на массив типа "ключ => значение"
 * [\Leonied7\Yandex\Disk\Model\Stream](https://github.com/leonied7/yandex-disk-api/wiki/Stream-Model)
-    * \Leonied7\Yandex\Disk\Stream\Loop - пустая обертка, не открывает потоков, сделана для получения результата в тело запроса (используется по умолчанию)
     * \Leonied7\Yandex\Disk\Stream\File - осуществляет работу с потоком файла, используется для записи/чтения файла
 ## Использование
 ### [Запрос информации о пользователе](https://tech.yandex.ru/disk/doc/dg/reference/userinfo-docpage/)

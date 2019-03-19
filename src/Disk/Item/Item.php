@@ -20,6 +20,9 @@ use Leonied7\Yandex\Disk\Builder\Item as ItemBuilder;
  */
 abstract class Item implements Entity
 {
+    const FILE = 'file';
+    const DIRECTORY = 'directory';
+
     protected $path;
     /** @var string */
     protected $type;
@@ -44,7 +47,7 @@ abstract class Item implements Entity
         }
 
         $this->queryData = $queryData;
-        $this->path = $this->getQueryData()->correctPath($path);
+        $this->path = $this->getQueryData()->correctUrl($path);
         $this->builder = $this->createBuilder();
 
         if ($property === null) {
@@ -99,7 +102,7 @@ abstract class Item implements Entity
      */
     public function isDirectory()
     {
-        return $this->getType() === 'directory';
+        return $this->getType() === self::DIRECTORY;
     }
 
     /**
@@ -108,7 +111,7 @@ abstract class Item implements Entity
      */
     public function isFile()
     {
-        return $this->getType() === 'file';
+        return $this->getType() === self::FILE;
     }
 
     /**
@@ -119,7 +122,7 @@ abstract class Item implements Entity
      */
     public function delete()
     {
-        return $this->getBuilder()->delete()->exec()->isSuccess();
+        return $this->getBuilder()->delete()->send()->isSuccess();
     }
 
     /**
@@ -134,7 +137,7 @@ abstract class Item implements Entity
      */
     public function copy($destination, $overwrite = true)
     {
-        return $this->getBuilder()->copy($destination, $overwrite)->exec()->isSuccess();
+        return $this->getBuilder()->copy($destination, $overwrite)->send()->isSuccess();
     }
 
     /**
@@ -149,9 +152,9 @@ abstract class Item implements Entity
      */
     public function move($destination, $overwrite = true)
     {
-        $result = $this->getBuilder()->move($destination, $overwrite)->exec();
+        $result = $this->getBuilder()->move($destination, $overwrite)->send();
         if ($result->isSuccess()) {
-            $this->path = QueryData::correctPath($destination);
+            $this->path = QueryData::correctUrl($destination);
         }
 
         return $result->isSuccess();
@@ -168,7 +171,7 @@ abstract class Item implements Entity
     public function loadProperties(PropertyCollection $property)
     {
         $this->properties = new PropertyCollection();
-        $result = $this->getBuilder()->loadProperties($property)->exec();
+        $result = $this->getBuilder()->loadProperties($property)->send();
 
         if (!$result->isSuccess()) {
             return $this->properties;
@@ -197,7 +200,7 @@ abstract class Item implements Entity
     {
         $properties = new PropertyCollection();
 
-        $result = $this->getBuilder()->getExistProperties()->exec();
+        $result = $this->getBuilder()->getExistProperties()->send();
 
         if (!$result->isSuccess()) {
             return $properties;
@@ -216,7 +219,7 @@ abstract class Item implements Entity
      */
     public function changeProperties(PropertyCollection $property)
     {
-        $result = $this->getBuilder()->changeProperties($property)->exec();
+        $result = $this->getBuilder()->changeProperties($property)->send();
         return $result->isSuccess();
     }
 
@@ -246,7 +249,7 @@ abstract class Item implements Entity
      */
     public function startPublish()
     {
-        return $this->getBuilder()->startPublish()->exec()->isSuccess();
+        return $this->getBuilder()->startPublish()->send()->isSuccess();
     }
 
     /**
@@ -257,7 +260,7 @@ abstract class Item implements Entity
      */
     public function stopPublish()
     {
-        return $this->getBuilder()->stopPublish()->exec()->isSuccess();
+        return $this->getBuilder()->stopPublish()->send()->isSuccess();
     }
 
     /**
@@ -268,7 +271,7 @@ abstract class Item implements Entity
      */
     public function checkPublish()
     {
-        return $this->getBuilder()->checkPublish()->exec()->isSuccess();
+        return $this->getBuilder()->checkPublish()->send()->isSuccess();
     }
 
     /**
@@ -281,7 +284,7 @@ abstract class Item implements Entity
     {
         $refreshProperty = $propertyCollection !== null;
 
-        $result = $this->getBuilder()->has($propertyCollection)->exec();
+        $result = $this->getBuilder()->has($propertyCollection)->send();
 
         if ($result->isSuccess()) {
             $properties = $result->getResult();
