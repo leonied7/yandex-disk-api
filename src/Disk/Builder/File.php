@@ -13,7 +13,6 @@ use Leonied7\Yandex\Disk\Model\Stream;
 use Leonied7\Yandex\Disk\Query\Builder as QueryBuilder;
 use Leonied7\Yandex\Disk\Result\Get;
 use Leonied7\Yandex\Disk\Result\Put;
-use Leonied7\Yandex\Disk\Stream\Loop;
 
 /**
  * Class File построитель запросов для файлов
@@ -35,8 +34,8 @@ class File extends Item
         $builder
             ->setMethod('PUT')
             ->setExecHandler(Put::class)
-            ->setHeaderHandler([Stream::class, 'addMetaData'])
-            ->setFile($stream);
+            ->setBeforeSend([Stream::class, 'addMetaData'])
+            ->setOutputFile($stream);
         return $builder;
     }
 
@@ -51,16 +50,12 @@ class File extends Item
      */
     public function download(Stream $stream = null, $from = null, $to = null)
     {
-        if ($stream === null) {
-            $stream = new Loop();
-        }
-
         $builder = QueryBuilder::createByData($this->getQueryData(), $this->getPath());
 
         $builder
             ->setMethod('GET')
             ->setExecHandler(Get::class)
-            ->setInFile($stream)
+            ->setInputFile($stream)
             ->setRange($from, $to);
         return $builder;
     }
@@ -75,10 +70,6 @@ class File extends Item
      */
     public function getPreview($size = 'M', Stream $stream = null)
     {
-        if ($stream === null) {
-            $stream = new Loop();
-        }
-
         $builder = QueryBuilder::createByData($this->getQueryData(), $this->getPath());
         $builder
             ->setMethod('GET')
@@ -87,7 +78,7 @@ class File extends Item
                 'preview' => '',
                 'size' => $size
             ])
-            ->setInFile($stream);
+            ->setInputFile($stream);
         return $builder;
     }
 }

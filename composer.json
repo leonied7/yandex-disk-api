@@ -28,9 +28,10 @@
     "ext-curl": "*",
     "ext-fileinfo": "*",
     "ext-dom": "*",
-    "ext-json": "*"
+    "ext-json": "*",
+    "ext-mbstring": "*"
   },
   "require-dev": {
-    "phpunit/phpunit": "5.7.x-dev"
+    "phpunit/phpunit": "^5.7.0"
   }
 }

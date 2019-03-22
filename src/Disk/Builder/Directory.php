@@ -51,9 +51,9 @@ class Directory extends Item
 
         $body = new Propfind();
         if ($refreshProperty) {
-            $body->setProps($propertyCollection);
+            $body->setPropertyCollection($propertyCollection);
         } else {
-            $body->getAll();
+            $body->setPropertiesAllMethod();
         }
 
         $builder

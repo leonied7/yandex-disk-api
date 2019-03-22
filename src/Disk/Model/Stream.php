@@ -10,6 +10,7 @@
 namespace Leonied7\Yandex\Disk\Model;
 
 use Leonied7\Yandex\Disk\Exception\InvalidArgumentException;
+use Leonied7\Yandex\Disk\Http\Request;
 
 /**
  * Class Stream используется для работы с потоками
@@ -58,24 +59,23 @@ abstract class Stream
     }
 
     /**
-     * @param Curl $curl
-     * @return array
+     * @param Request $request
      */
-    public static function addMetaData(Curl $curl)
+    public static function addMetaData(Request $request)
     {
-        $streamMeta = $curl->getFile()->getMetaData();
-        $stream = $curl->getFile()->getStream();
+        $file = $request->getBuilder()->getOutputFile();
+        $streamMeta = $file->getMetaData();
+        $stream = $file->getStream();
         $md5 = hash_init('md5');
         hash_update_stream($md5, $stream);
         $sha256 = hash_init('sha256');
         hash_update_stream($sha256, $stream);
         rewind($stream); //скидываем указатель потока, т.к. hash_update_stream его сдвигает
-        $result = [
+        $request->addHeaders([
             'Etag' => hash_final($md5),
             'Sha256' => hash_final($sha256),
             'Content-Type' => mime_content_type($streamMeta['uri'])
-        ];
-        return $result;
+        ]);
     }
 
     /**

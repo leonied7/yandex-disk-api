@@ -19,22 +19,13 @@ use Leonied7\Yandex\Disk\Entity\Result;
 class Copy extends Result
 {
     /**
-     * должен возвращать список удовлетворяющих кодов ответов от диска
-     * @return array
+     * {@inheritdoc}
      */
     protected function getGoodCode()
     {
         return [
-            201
+            201,
+            202
         ];
-    }
-
-    /**
-     * вызывается только если тип ответа xml формата
-     * @return mixed - возвращаемое значение попадёт в prepare
-     */
-    protected function prepareDom()
-    {
-        return null;
     }
 }

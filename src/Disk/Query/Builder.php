@@ -9,16 +9,14 @@
 namespace Leonied7\Yandex\Disk\Query;
 
 use Leonied7\Yandex\Disk\Collection\ResultList;
-use Leonied7\Yandex\Disk\Curl\Multi;
-use Leonied7\Yandex\Disk\Curl\Response;
-use Leonied7\Yandex\Disk\Curl\Single;
 use Leonied7\Yandex\Disk\Exception\InvalidArgumentException;
+use Leonied7\Yandex\Disk\Http\Transport;
+use Leonied7\Yandex\Disk\Http\Request;
+use Leonied7\Yandex\Disk\Http\Response;
 use Leonied7\Yandex\Disk\Model\Body;
-use Leonied7\Yandex\Disk\Model\Curl;
 use Leonied7\Yandex\Disk\Model\Decorator;
 use Leonied7\Yandex\Disk\Entity\Result;
 use Leonied7\Yandex\Disk\Model\Stream;
-use Leonied7\Yandex\Disk\Stream\Loop;
 use Leonied7\Yandex\Disk\Query\Data as QueryData;
 
 /**
@@ -27,33 +25,15 @@ use Leonied7\Yandex\Disk\Query\Data as QueryData;
  */
 class Builder
 {
-    protected $method;
-    protected $url;
-    protected $headers = [];
-    protected $params = [];
-    /** @var callable */
-    protected $handler;
+    protected $request;
     /** @var string */
-    protected $execHandler = \Leonied7\Yandex\Disk\Result\Loop::class;
+    protected $execHandler = \Leonied7\Yandex\Disk\Result\Get::class;
     /** @var Decorator */
     protected $resultDecorator;
-    protected $body = '';
-    /** @var Stream */
-    protected $infile;
-    /** @var Stream */
-    protected $file;
-    protected $range = [0, null];
-    /** @var QueryData */
-    protected $queryData;
-    /** @var ResultList */
-    protected $queryList;
 
-    public function __construct(QueryData $queryData)
+    public function __construct()
     {
-        $this->queryData = $queryData;
-        $this->queryList = ResultList::getInstance();
-        $this->infile = $this->file = new Loop();
-        $this->resultDecorator = new \Leonied7\Yandex\Disk\Decorator\Loop();
+        $this->request = new Request($this);
     }
 
     /**
@@ -63,14 +43,22 @@ class Builder
      */
     public static function createByData(QueryData $queryData, $path)
     {
-        $builder = new static($queryData);
+        $builder = new static();
         $builder
             ->setHeaders([
                 'Authorization' => "OAuth {$queryData->getToken()}",
                 'Accept' => '*/*'
             ])
-            ->setUrl(QueryData::getPath($path));
+            ->setPath($path);
         return $builder;
+    }
+
+    /**
+     * @return Request
+     */
+    public function getRequest()
+    {
+        return $this->request;
     }
 
     /**
@@ -80,19 +68,27 @@ class Builder
      */
     public function setMethod($method)
     {
-        $this->method = $method;
+        $this->request->setMethod($method);
         return $this;
     }
 
     /**
      * установка пути
-     * @param $url
+     * @param string $path
      * @return $this
      */
-    public function setUrl($url)
+    public function setPath($path)
     {
-        $this->url = $url;
+        $this->request->setUrl($path);
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->request->getUrl();
     }
 
     /**
@@ -102,8 +98,7 @@ class Builder
      */
     public function setHeaders(array $headers = [])
     {
-        $this->headers = [];
-        $this->addHeaders($headers);
+        $this->request->setHeaders($headers);
         return $this;
     }
 
@@ -112,11 +107,9 @@ class Builder
      * @param array $headers
      * @return $this
      */
-    public function addHeaders(array $headers = [])
+    public function addHeaders(array $headers)
     {
-        foreach ($headers as $name => $value) {
-            $this->headers[$name] = $value;
-        }
+        $this->request->addHeaders($headers);
         return $this;
     }
 
@@ -127,8 +120,7 @@ class Builder
      */
     public function setParams(array $params = [])
     {
-        $this->params = [];
-        $this->addParams($params);
+        $this->request->setQueryParams($params);
         return $this;
     }
 
@@ -139,9 +131,18 @@ class Builder
      */
     public function addParams(array $params = [])
     {
-        foreach ($params as $name => $value) {
-            $this->params[$name] = $value;
-        }
+        $this->request->addQueryParams($params);
+        return $this;
+    }
+
+    /**
+     * установка тела запроса
+     * @param Body $body
+     * @return $this
+     */
+    public function setBody(Body $body)
+    {
+        $this->request->setContent($body->build());
         return $this;
     }
 
@@ -153,10 +154,30 @@ class Builder
      * @param callable $handler
      * @return $this
      */
-    public function setHeaderHandler(callable $handler)
+    public function setBeforeSend(callable $handler)
     {
-        $this->handler = $handler;
+        $this->request->setBeforeSend($handler);
         return $this;
+    }
+
+    public function beforeSend()
+    {
+        if (($inputFile = $this->request->getInputFile()) && $inputFile->getStream()) {
+            $this->request->addOptions([
+                CURLOPT_FILE => $inputFile->getStream()
+            ]);
+        }
+
+        if (($outputFile = $this->request->getOutputFile()) && $outputFile->getStream()) {
+            $this->request->addOptions([
+                CURLOPT_INFILE => $outputFile->getStream(),
+                CURLOPT_PUT => true
+            ]);
+        }
+    }
+
+    public function afterSend(Result $result)
+    {
     }
 
     /**
@@ -183,35 +204,39 @@ class Builder
         return $this;
     }
 
+    public function setInputFile(Stream $stream = null)
+    {
+        $this->request->setInputFile($stream);
+        return $this;
+    }
+
     /**
-     * установка тела запроса
-     * @param Body $body
-     * @return $this
+     * @return Stream
      */
-    public function setBody(Body $body)
+    public function getInputFile()
     {
-        $this->body = $body->xml();
+        return $this->request->getInputFile();
+    }
+
+    public function setOutputFile(Stream $stream = null)
+    {
+        $this->request->setOutputFile($stream);
         return $this;
     }
 
-    public function setInFile(Stream $stream)
+    /**
+     * @return Stream
+     */
+    public function getOutputFile()
     {
-        $this->infile = $stream;
-        return $this;
-    }
-
-    public function setFile(Stream $stream)
-    {
-        $this->file = $stream;
-        return $this;
+        return $this->request->getOutputFile();
     }
 
     public function setRange($from = 0, $to = null)
     {
-        $this->range = [
-            $from,
-            $to
-        ];
+        $this->request->addOptions([
+            CURLOPT_RANGE => "{$from}-{$to}"
+        ]);
         return $this;
     }
 
@@ -219,56 +244,26 @@ class Builder
      * выполнение запроса
      * @return Result
      */
-    public function exec()
+    public function send()
     {
-        $query = $this->createSingle();
-        return $query->exec();
+        $transport = new Transport();
+        return $transport->send($this->request);
     }
 
-    public function createSingle()
+    public function createResponse($content, $headers, $code, $type)
     {
-        $curl = new Single($this->method, $this->url, $this);
-        $this->setOptions($curl);
-        if ($this->handler) {
-            $curl->setHeadHandler($this->handler);
-        }
-
-        return $curl;
+        $response = new Response($this, $code, $type);
+        $response->setContent($content);
+        $response->setHeaders($headers);
+        return $response;
     }
 
-    public function createMulti()
-    {
-        $curl = new Multi($this->method, $this->url, $this);
-        $this->setOptions($curl);
-        if ($this->handler) {
-            $curl->setHeadHandler($this->handler);
-        }
-
-        return $curl;
-    }
-
-    /**
-     * @param Response $response
-     * @return Result
-     * @throws InvalidArgumentException
-     */
-    public function prepareResponse(Response $response)
+    public function createResult(Response $response)
     {
         /** @var Result $result */
         $result = new $this->execHandler($response);
-        $this->queryList->add($result);
+        ResultList::getInstance()->add($result);
         $result->setDecorator($this->resultDecorator);
         return $result;
-    }
-
-    private function setOptions(Curl $curl)
-    {
-        $curl->setHeaders($this->headers)
-            ->setQueryParams($this->params)
-            ->setBody($this->body)
-            ->setRangeFrom($this->range[0])
-            ->setRangeTo($this->range[1])
-            ->setInFile($this->infile)
-            ->setFile($this->file);
     }
 }

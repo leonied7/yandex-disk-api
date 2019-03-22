@@ -48,14 +48,14 @@ class Data
      * @param $path
      * @return string
      */
-    public static function correctPath($path)
+    public static function correctUrl($path)
     {
-        $path = trim($path, '/');
+        $path = str_replace('\\', '/', $path);
         return '/' . trim($path, '/');
     }
 
-    public static function getPath($path)
+    public static function getUrl($uri)
     {
-        return static::URL . static::correctPath($path);
+        return static::URL . static::correctUrl($uri);
     }
 }

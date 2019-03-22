@@ -11,6 +11,7 @@ namespace Leonied7\Yandex\Disk\Body;
 use FluidXml\FluidXml;
 use Leonied7\Yandex\Disk\Collection\PropertyCollection;
 use Leonied7\Yandex\Disk\Model\Body;
+use Leonied7\Yandex\Disk\Model\Property;
 
 /**
  * отвечает за построение тела запроса для запросов типа PROPPATCH
@@ -22,26 +23,22 @@ class Proppatch implements Body
     /** @var FluidXml объект xml */
     protected $xml;
     /** @var PropertyCollection коллекция свойств */
-    protected $props;
-    /** @var \Leonied7\Yandex\Disk\Model\Property[] */
-    protected $propsSet = [];
-    /** @var \Leonied7\Yandex\Disk\Model\Property[] */
-    protected $propsRemove = [];
+    protected $propertyCollection;
 
     public function __construct()
     {
-        $this->props = new PropertyCollection();
+        $this->propertyCollection = new PropertyCollection();
         $this->xml = new FluidXml('propertyupdate');
         $this->xml->setAttribute('xmlns', 'DAV:');
     }
 
     /**
-     * @param PropertyCollection $property
+     * @param PropertyCollection $propertyCollection
      * @return Proppatch
      */
-    public function setProps(PropertyCollection $property)
+    public function setPropertyCollection(PropertyCollection $propertyCollection)
     {
-        $this->props = $property;
+        $this->propertyCollection = $propertyCollection;
         return $this;
     }
 
@@ -51,12 +48,12 @@ class Proppatch implements Body
      * @return mixed|string
      * @throws \Exception
      */
-    public function xml()
+    public function build()
     {
         $this->setNamespaces();
-        $this->prepareProps();
-        $this->generateSet();
-        $this->generateRemove();
+        list($setProperties, $removeProperties) = $this->prepareProps();
+        $this->generateSet($setProperties);
+        $this->generateRemove($removeProperties);
 
         return $this->xml->xml();
     }
@@ -67,72 +64,76 @@ class Proppatch implements Body
      */
     protected function setNamespaces()
     {
-        foreach ($this->props->getNamespaces() as $namespace) {
+        foreach ($this->propertyCollection->getNamespaces() as $namespace) {
             $this->xml->namespace($namespace, $namespace);
         }
 
     }
 
     /**
-     * перебирает свойтва, распределяет свойства для установки и удаления
+     * распределяет свойства для установки/удаления
+     * @return Property[][]
      */
     protected function prepareProps()
     {
-        foreach ($this->props as $prop) {
-            if ($prop->getValue()) {
-                $this->propsSet[] = $prop;
+        $setProperties = $removeProperties = [];
+        foreach ($this->propertyCollection as $property) {
+            if ($property->getValue()) {
+                $setProperties[] = $property;
             } else {
-                $this->propsRemove[] = $prop;
+                $removeProperties[] = $property;
             }
         }
+        return [$setProperties, $removeProperties];
     }
 
     /**
      * генерирует свойства, которые нужно установить
+     * @param Property[] $setProperties
      */
-    protected function generateSet()
+    protected function generateSet(array $setProperties = [])
     {
-        if (empty($this->propsSet)) {
+        if (empty($setProperties)) {
             return;
         }
 
         $set = $this->xml->addChild('set', true)->addChild('prop', true);
 
-        foreach ($this->propsSet as $prop) {
-            $arProp = [
-                '@' => $prop->getValue()
+        foreach ($setProperties as $property) {
+            $childValue = [
+                '@' => $property->getValue()
             ];
 
-            if ($prop->getNamespace()) {
-                $arProp['@xmlns'] = $prop->getNamespace();
+            if ($property->getNamespace()) {
+                $childValue['@xmlns'] = $property->getNamespace();
             }
 
             $set->addChild([
-                $prop->getName() => $arProp
+                $property->getName() => $childValue
             ]);
         }
     }
 
     /**
      * генерирует свойства, которые нужно удалить
+     * @param Property[] $removeProperties
      */
-    protected function generateRemove()
+    protected function generateRemove(array $removeProperties = [])
     {
-        if (empty($this->propsRemove)) {
+        if (empty($removeProperties)) {
             return;
         }
 
         $remove = $this->xml->addChild('remove', true)->addChild('prop', true);
 
-        foreach ($this->propsRemove as $prop) {
-            $arProp = [];
-
-            if ($prop->getNamespace()) {
-                $arProp['@xmlns'] = $prop->getNamespace();
+        foreach ($removeProperties as $property) {
+            $childValue = [];
+            if ($property->getNamespace()) {
+                $childValue['@xmlns'] = $property->getNamespace();
             }
 
             $remove->addChild([
-                $prop->getName() => $arProp
+                $property->getName() => $childValue
             ]);
         }
     }

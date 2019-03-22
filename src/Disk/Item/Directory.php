@@ -28,7 +28,7 @@ class Directory extends Item
      */
     public function __construct($path, QueryData $queryData, PropertyCollection $property = null)
     {
-        $this->type = 'directory';
+        $this->type = self::DIRECTORY;
         parent::__construct($path, $queryData, $property);
     }
 
@@ -45,7 +45,7 @@ class Directory extends Item
      */
     public function create()
     {
-        return $this->getBuilder()->create()->exec()->isSuccess();
+        return $this->getBuilder()->create()->send()->isSuccess();
     }
 
     /**
@@ -61,7 +61,7 @@ class Directory extends Item
     public function getChildren(PropertyCollection $propertyCollection = null, $offset = 0, $amount = null)
     {
         $child = [];
-        $result = $this->getBuilder()->getChildren($propertyCollection, $offset, $amount)->exec();
+        $result = $this->getBuilder()->getChildren($propertyCollection, $offset, $amount)->send();
 
         if(!$result->isSuccess()) {
             return $child;
@@ -79,7 +79,7 @@ class Directory extends Item
 
         foreach ($responseResult as $name => $element)
         {
-            if($name === QueryData::correctPath($name)) {
+            if($name === QueryData::correctUrl($name)) {
                 $child[] = new File($name, $this->getQueryData(), $element['apply']);
             } else {
                 $child[] = new Directory($name, $this->getQueryData(), $element['apply']);
