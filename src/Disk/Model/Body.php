@@ -18,5 +18,5 @@ interface Body
      * формирование запроса
      * @return string
      */
-    public function xml();
+    public function build();
 }

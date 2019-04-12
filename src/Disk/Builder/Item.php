@@ -51,9 +51,9 @@ abstract class Item extends \Leonied7\Yandex\Disk\Entity\Builder
 
         $body = new Propfind();
         if ($refreshProperty) {
-            $body->setProps($propertyCollection);
+            $body->setPropertyCollection($propertyCollection);
         } else {
-            $body->getAll();
+            $body->setPropertiesAllMethod();
         }
 
         $builder
@@ -97,7 +97,7 @@ abstract class Item extends \Leonied7\Yandex\Disk\Entity\Builder
             ->setMethod('COPY')
             ->setExecHandler(Copy::class)
             ->addHeaders([
-                'Destination' => $this->getQueryData()->correctPath($destination),
+                'Destination' => $this->getQueryData()->correctUrl($destination),
                 'Overwrite' => $overwrite ? 'T' : 'F'
             ]);
         return $builder;
@@ -123,7 +123,7 @@ abstract class Item extends \Leonied7\Yandex\Disk\Entity\Builder
             ->setMethod('MOVE')
             ->setExecHandler(Move::class)
             ->addHeaders([
-                'Destination' => $this->getQueryData()->correctPath($destination),
+                'Destination' => $this->getQueryData()->correctUrl($destination),
                 'Overwrite' => $overwrite ? 'T' : 'F'
             ]);
         return $builder;
@@ -139,7 +139,7 @@ abstract class Item extends \Leonied7\Yandex\Disk\Entity\Builder
     public function loadProperties(PropertyCollection $property)
     {
         $body = new Propfind();
-        $body->setProps($property);
+        $body->setPropertyCollection($property);
 
         $builder = QueryBuilder::createByData($this->getQueryData(), $this->getPath());
 
@@ -161,7 +161,7 @@ abstract class Item extends \Leonied7\Yandex\Disk\Entity\Builder
     public function getExistProperties()
     {
         $body = new Propfind();
-        $body->getNames();
+        $body->setPropertiesNameMethod();
 
         $builder = QueryBuilder::createByData($this->getQueryData(), $this->getPath());
 
@@ -185,7 +185,7 @@ abstract class Item extends \Leonied7\Yandex\Disk\Entity\Builder
     public function changeProperties(PropertyCollection $property)
     {
         $body = new Proppatch();
-        $body->setProps($property);
+        $body->setPropertyCollection($property);
 
         $builder = QueryBuilder::createByData($this->getQueryData(), $this->getPath());
         $builder

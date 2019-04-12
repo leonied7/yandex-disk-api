@@ -87,7 +87,7 @@ class Disk implements Entity
      */
     public function spaceInfo()
     {
-        return $this->getBuilder()->spaceInfo()->exec()->getResult();
+        return $this->getBuilder()->spaceInfo()->send()->getResult();
     }
 
     /**
@@ -98,6 +98,6 @@ class Disk implements Entity
      */
     public function getInfo()
     {
-        return $this->getBuilder()->getInfo()->exec()->getResult();
+        return $this->getBuilder()->getInfo()->send()->getResult();
     }
 }

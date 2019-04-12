@@ -19,8 +19,7 @@ use Leonied7\Yandex\Disk\Entity\Result;
 class Get extends Result
 {
     /**
-     * должен возвращать список удовлетворяющих кодов ответов от диска
-     * @return array
+     * {@inheritdoc}
      */
     protected function getGoodCode()
     {
@@ -28,14 +27,5 @@ class Get extends Result
             200,
             206
         ];
-    }
-
-    /**
-     * вызывается только если тип ответа xml формата
-     * @return mixed - возвращаемое значение попадёт в prepare
-     */
-    protected function prepareDom()
-    {
-        return null;
     }
 }

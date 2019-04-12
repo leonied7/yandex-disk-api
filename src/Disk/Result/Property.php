@@ -11,33 +11,34 @@ namespace Leonied7\Yandex\Disk\Result;
 
 
 use FluidXml\FluidContext;
+use FluidXml\FluidXml;
 use Leonied7\Yandex\Disk\Collection\PropertyCollection;
 use Leonied7\Yandex\Disk\Collection\PropertyFail;
 use Leonied7\Yandex\Disk\Entity\Result;
+use Leonied7\Yandex\Disk\Http\Response;
 use Leonied7\Yandex\Disk\Util\XmlReader;
 
 abstract class Property extends Result
 {
-    protected function prepareDom()
-    {
-        $self = $this;
-        $result = $this->xml->query('d:response')->map(function ($key, \DOMElement $response) use ($self) {
-            /** @var FluidContext $this */
-            return $self->onResponse($this, $response);
-        });
-        $result = array_column($result, 'result', 'href');
-        return $result;
-    }
-
     /**
-     * должен возвращать список удовлетворяющих кодов ответов от диска
-     * @return array
+     * {@inheritdoc}
      */
     protected function getGoodCode()
     {
         return [
             207
         ];
+    }
+
+    protected function prepareDom(FluidXml $xml)
+    {
+        $self = $this;
+        $result = $xml->query('d:response')->map(function ($key, \DOMElement $response) use ($self) {
+            /** @var FluidContext $this */
+            return $self->onResponse($this, $response);
+        });
+        $result = array_column($result, 'result', 'href');
+        return $result;
     }
 
     protected function onResponse(FluidContext $xml, \DOMElement $response)
@@ -64,7 +65,7 @@ abstract class Property extends Result
         $fail = null;
         $properties = $this->getProperties($xml);
 
-        if (strpos($status, Result::YANDEX_DISK_RESULT_OK_STATUS) === false) {
+        if (strpos($status, Response::OK_STATUS) === false) {
             $fail = $this->onFailStatus($status, $properties);
         } else {
             $this->onSuccessStatus($properties, $applyCollection);

@@ -10,9 +10,9 @@
 namespace Leonied7\Yandex\Disk\Entity;
 
 use FluidXml\FluidXml;
-use Leonied7\Yandex\Disk\Curl\Response as CurlResponse;
-use Leonied7\Yandex\Disk\Decorator\Loop;
+use Leonied7\Yandex\Disk\Http\Response;
 use Leonied7\Yandex\Disk\Model\Decorator;
+use Leonied7\Yandex\Disk\Query\Builder;
 
 /**
  * Class Result осуществляет работу с результатов ответа
@@ -20,36 +20,35 @@ use Leonied7\Yandex\Disk\Model\Decorator;
  */
 abstract class Result
 {
-    const YANDEX_DISK_RESULT_OK_STATUS = '200 OK';
-    const YANDEX_DISK_RESULT_XML = 'application/xml';
-    const YANDEX_DISK_RESULT_TEXT = 'text/plain';
-
-    /** @var CurlResponse */
+    /** @var Response */
     protected $response;
-    /** @var FluidXml */
-    protected $xml;
-
     protected $result;
     /** @var Decorator */
     protected $decorator;
 
-    public function __construct(CurlResponse $response)
+    public function __construct(Response $response)
     {
-        $this->decorator = new Loop();
-
         $this->response = $response;
 
-        $result = $this->getResponse()->getBody();
-        if ($this->getResponseType() === self::YANDEX_DISK_RESULT_XML) {
-            @$this->xml = new FluidXml($result); // глушим предупреждение "xmlns: URI mynamespace is not absolute"
-            $result = $this->prepareDom();
+        $result = $this->getResponse()->getContent();
+        if ($this->getResponseType() === Response::TYPE_XML) {
+            @$xml = new FluidXml($result); // глушим предупреждение "xmlns: URI mynamespace is not absolute"
+            $result = $this->prepareDom($xml);
         }
 
-        $this->result = $this->prepare($result);
+        $this->result = $result;
     }
 
     /**
-     * @return CurlResponse
+     * @return Builder
+     */
+    public function getBuilder()
+    {
+        return $this->getResponse()->getBuilder();
+    }
+
+    /**
+     * @return Response
      */
     public function getResponse()
     {
@@ -68,19 +67,10 @@ abstract class Result
      * @param Decorator $decorator
      * @return Result
      */
-    public function setDecorator(Decorator $decorator)
+    public function setDecorator(Decorator $decorator = null)
     {
         $this->decorator = $decorator;
         return $this;
-    }
-
-    /**
-     * получение результата пропущеного через заранее установленный декоратор через setDecorator()
-     * @return mixed
-     */
-    public function getResult()
-    {
-        return $this->getDecorator()->convert($this->result);
     }
 
     /**
@@ -91,6 +81,15 @@ abstract class Result
     public function getDecorateResult(Decorator $decorator)
     {
         return $decorator->convert($this->result);
+    }
+
+    /**
+     * получение результата пропущеного через заранее установленный декоратор через setDecorator()
+     * @return mixed
+     */
+    public function getResult()
+    {
+        return $this->getDecorator() ? $this->getDecorator()->convert($this->result) : $this->getActualResult();
     }
 
     /**
@@ -131,24 +130,18 @@ abstract class Result
 
 
     /**
+     * вызывается только если тип ответа xml формата
+     * @param FluidXml $xml
+     * @return mixed - возвращаемое значение попадёт в prepare
+     */
+    protected function prepareDom(FluidXml $xml)
+    {
+        return null;
+    }
+
+    /**
      * должен возвращать список удовлетворяющих кодов ответов от диска
      * @return array
      */
     abstract protected function getGoodCode();
-
-    /**
-     * преобразование результата, возращенное значение из функции будет записано в результат
-     * @param $data
-     * @return mixed
-     */
-    protected function prepare($data)
-    {
-        return $data;
-    }
-
-    /**
-     * вызывается только если тип ответа xml формата
-     * @return mixed - возвращаемое значение попадёт в prepare
-     */
-    abstract protected function prepareDom();
 }
